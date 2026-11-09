@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Qo‘l Studiya</title>
+<meta name="theme-color" content="#04050a">
+<meta name="description" content="Qo‘llaringiz bilan havoda shakl chizing va ularni boshqaring">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04050a;--glass:rgba(14,16,28,.6);--line:rgba(255,255,255,.1);--txt:#e9ecff;--mut:#959bc2;--acc:#8b7bff;--ok:#5dff9b;--tool:min(66px,8.6vh)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;user-select:none}
+#video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);z-index:0;display:none;filter:brightness(var(--vb,.7)) saturate(1.1)}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:1;touch-action:none}
+body.ar #video{display:block} body.ar #gl{mix-blend-mode:screen}
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid var(--line);border-radius:18px}
+button{font-family:inherit}
+.btn{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:9px 12px;cursor:pointer;font:500 13px Inter,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:.2s}
+.btn:hover{background:rgba(255,255,255,.1)} .btn.on{border-color:var(--acc);background:rgba(139,123,255,.22)}
+.btn.pri{background:linear-gradient(135deg,#7b5cff,#00b8ff);border:0;color:#fff;font-weight:600}
+.btn.big{padding:14px 22px;font-size:15px;border-radius:14px}
+.btn.rec.on{border-color:#ff3b5c;background:rgba(255,59,92,.25)}
+
+#hud{position:fixed;top:14px;left:50%;transform:translateX(-50%);padding:9px 18px;display:flex;gap:14px;align-items:center;z-index:4;max-width:calc(100% - 300px)}
+.logo{font-family:Unbounded,sans-serif;font-weight:700;font-size:15px;background:linear-gradient(90deg,#b3a8ff,#00d4ff,#ff6ad5);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+#status{font-size:13.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.pal{position:fixed;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;padding:8px;z-index:4}
+#palL{left:14px} #palR{right:14px}
+.pal .cap{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);text-align:center;font-weight:600;padding:2px 0}
+.tool{position:relative;width:var(--tool);height:var(--tool);border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--txt);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:transform .15s,background .2s,border-color .2s,opacity .2s;font:600 9.5px Inter,sans-serif}
+.tool span{font-size:calc(var(--tool)*.38);line-height:1}
+.tool::after{content:'';position:absolute;inset:-4px;border-radius:19px;padding:3px;background:conic-gradient(var(--ok) calc(var(--p,0)*1turn),transparent 0);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.tool:hover,.tool.hover{background:rgba(255,255,255,.12);transform:scale(1.08)}
+.tool.on{border-color:var(--acc);background:rgba(139,123,255,.3);box-shadow:0 0 18px rgba(139,123,255,.5)}
+.tool.dis{opacity:.38}
+.tool.flash{animation:fl .4s}
+@keyframes fl{40%{background:rgba(93,255,155,.45);transform:scale(1.15)}}
+.tool .dot{position:absolute;right:6px;top:6px;width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(255,255,255,.7)}
+
+.cur{position:fixed;left:0;top:0;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 14px rgba(255,255,255,.6);z-index:6;pointer-events:none;display:none;transition:width .12s,height .12s,margin .12s,background .12s,border-color .12s}
+.cur b{position:absolute;left:30px;top:-16px;font-size:20px;filter:drop-shadow(0 0 4px #000)}
+.cur.pinch{width:26px;height:26px;margin:-13px 0 0 -13px;background:rgba(93,255,155,.45);border-color:var(--ok);box-shadow:0 0 18px var(--ok)}
+.cur.ui{border-color:#ffe14d;box-shadow:0 0 16px #ffe14d}
+.cur.obj{border-color:#00e5ff;box-shadow:0 0 16px #00e5ff}
+
+#trash{position:fixed;left:50%;bottom:26px;width:100px;height:100px;margin-left:-50px;border-radius:50%;display:grid;place-items:center;font-size:40px;z-index:3;opacity:0;transform:scale(.6);transition:.25s;pointer-events:none;border:2px dashed rgba(255,80,100,.7);background:rgba(255,40,70,.14)}
+#trash.show{opacity:1;transform:scale(1)} #trash.hot{transform:scale(1.25);background:rgba(255,40,70,.5);border-style:solid;border-color:#ff3b5c}
+
+#toast{position:fixed;top:72px;left:50%;transform:translate(-50%,-12px);opacity:0;transition:.3s;padding:10px 18px;font-weight:600;font-size:14.5px;pointer-events:none;z-index:9;white-space:nowrap}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#hint{position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);padding:14px 20px;font-weight:600;font-size:15px;z-index:8;opacity:0;pointer-events:none;transition:.4s;text-align:center;max-width:calc(100% - 200px)}
+#hint.show{opacity:1}
+
+#tut{position:fixed;left:50%;bottom:20px;transform:translate(-50%,20px);width:min(480px,calc(100% - 200px));padding:15px 18px;z-index:7;opacity:0;pointer-events:none;transition:.35s}
+#tut.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#tut h4{font-family:Unbounded,sans-serif;font-size:13.5px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+#tut h4 button{background:none;border:0;color:var(--mut);font-size:18px;cursor:pointer}
+.step{display:flex;gap:10px;align-items:center;padding:5px 0;color:var(--mut);font-size:13.5px;transition:.3s}
+.step .ck{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);display:grid;place-items:center;font-size:12px;font-weight:700}
+.step.cur{color:var(--txt)} .step.cur .ck{border-color:var(--acc);box-shadow:0 0 10px rgba(139,123,255,.6)}
+.step.done{color:var(--ok)} .step.done .ck{background:var(--ok);color:#04050a;border-color:var(--ok)}
+#tut .fin{font-weight:600;color:var(--ok);margin-top:4px;display:none}
+
+#setBtn{position:fixed;right:14px;top:14px;width:44px;height:44px;padding:0;font-size:18px;z-index:6}
+#panel{position:fixed;top:66px;right:14px;width:300px;max-height:calc(100% - 80px);overflow-y:auto;padding:6px 16px 16px;z-index:6;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+#panel.hide{transform:translateX(calc(100% + 30px))}
+#panel h3{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:14px 0 8px;font-weight:600}
+.rng{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-top:8px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+select{width:100%;background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:8px;font:12px Inter,sans-serif;outline:none}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.small{font-size:11.5px;color:var(--mut);line-height:1.55}
+a{color:#9fdcff}
+#recDot{position:fixed;top:20px;left:20px;color:#ff3b5c;font:700 12px Inter;letter-spacing:.12em;display:none;z-index:9;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.3}}
+
+#start{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgba(4,5,10,.5),rgba(4,5,10,.92));z-index:20;padding:16px;transition:opacity .6s}
+#start.out{opacity:0;pointer-events:none}
+.card{max-width:580px;text-align:center;padding:34px 28px}
+.badge{display:inline-block;font-size:12px;padding:6px 12px;border-radius:99px;border:1px solid var(--line);color:#cfd3f5;margin-bottom:16px}
+h1{font-family:Unbounded,sans-serif;font-size:clamp(32px,7vw,56px);line-height:1.05;background:linear-gradient(90deg,#c3b9ff,#00d4ff 50%,#ff6ad5);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:14px}
+.card p{color:#c3c7e6;line-height:1.6;margin-bottom:20px}
+.how{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:22px;text-align:center}
+.how div{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:12px 8px;font-size:12px;color:#cfd3f5;line-height:1.4}
+.how b{display:block;font-size:24px;margin-bottom:4px}
+.card .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+#startStatus{margin-top:16px;font-size:12.5px;color:var(--mut)}
+@media (max-width:760px){#hud{display:none}#tut,#hint{width:calc(100% - 180px)}.how{grid-template-columns:1fr}}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<video id="video" playsinline muted></video>
+<canvas id="gl"></canvas>
+
+<div id="start">
+  <div class="card glass">
+    <div class="badge">✋ Faqat qo‘l bilan boshqariladi</div>
+    <h1>Qo‘l Studiya</h1>
+    <p>Havoda qo‘lingiz bilan shakl chizing — dastur uni tekis aylana, kvadrat yoki uchburchakka aylantiradi. Keyin ushlab ko‘chiring, kattalashtiring, burang, 3D qiling.</p>
+    <div class="how">
+      <div><b>🤏</b>Chimdish = bosish<br>(bosh + ko‘rsatkich barmoq)</div>
+      <div><b>👉</b>Chetdagi tugmaga barmoqni olib boring va chimding</div>
+      <div><b>🤏🤏</b>Ikki qo‘l bilan shaklni cho‘zing va burang</div>
+    </div>
+    <div class="row">
+      <button class="btn big pri" id="goCam">📷 Kamera bilan boshlash</button>
+      <button class="btn big" id="goMouse">🖱 Kamerasiz sinash</button>
+    </div>
+    <div id="startStatus">Video hech qayerga yuborilmaydi — hammasi kompyuteringizning o‘zida ishlaydi.</div>
+  </div>
+</div>
+
+<div id="hud" class="glass"><div class="logo">Qo‘l Studiya</div><div id="status">Boshlash tugmasini bosing</div></div>
+<div id="palL" class="pal glass"></div>
+<div id="palR" class="pal glass"></div>
+<div class="cur" id="cur0"><b></b></div>
+<div class="cur" id="cur1"><b></b></div>
+<div id="trash">🗑</div>
+<div id="toast" class="glass"></div>
+<div id="hint" class="glass"></div>
+<div id="tut" class="glass"><h4><span>🎓 Mashq</span><button id="tutX" title="Yopish">✕</button></h4><div id="tutS"></div><div class="fin">🎉 Zo‘r! Endi o‘zingiz ijod qiling</div></div>
+<div id="recDot">● REC</div>
+
+<button id="setBtn" class="btn glass" title="Sozlamalar">⚙️</button>
+<aside id="panel" class="glass hide">
+  <h3>Kamera</h3>
+  <select id="camSel"></select>
+  <div class="rng"><span>Kamera yorqinligi</span><span id="vVb">0.70</span></div>
+  <input type="range" id="rVb" min="0.1" max="1.2" step="0.05" value="0.7">
+  <div class="g2" style="margin-top:8px"><button class="btn on" id="tAR">📷 Kamera fonda</button><button class="btn on" id="tSkel">🖐 Qo‘l skeleti</button></div>
+  <h3>Ko‘rinish</h3>
+  <div class="rng"><span>Nur kuchi</span><span id="vBloom">1.00</span></div>
+  <input type="range" id="rBloom" min="0" max="2.5" step="0.05" value="1">
+  <div class="rng"><span>Zarracha o‘lchami</span><span id="vSize">1.00</span></div>
+  <input type="range" id="rSize" min="0.5" max="2.2" step="0.05" value="1">
+  <div class="rng"><span>Ushlab tanlash vaqti</span><span id="vDw">0.70 s</span></div>
+  <input type="range" id="rDw" min="0.3" max="1.5" step="0.05" value="0.7">
+  <h3>Saqlash</h3>
+  <div class="g2"><button class="btn rec" id="tRec">⏺ Video</button><button class="btn" id="tSnap">📸 Rasm</button></div>
+  <h3>Yordam</h3>
+  <div class="small">
+    🤏 <b>Bo‘sh joyda chimdib yurgizing</b> — tanlangan asbob bilan chiziladi.<br>
+    ✍️ <b>Chizish</b> asbobida qo‘pol aylana/kvadrat/uchburchak chizsangiz — tekis shaklga aylanadi.<br>
+    🤏 <b>Shaklni chimdib</b> ushlang → ko‘chiring → qo‘yib yuboring (qotadi). Pastdagi 🗑 ga tashlasangiz o‘chadi.<br>
+    🤏🤏 <b>Bir qo‘l ushlab turib, ikkinchisi bilan chimdib</b> — kattalashtirish va burash.<br>
+    👉 <b>O‘ngdagi tugmalar</b> tanlangan shaklga ishlov beradi: rang, 3D, to‘ldirish, aylantirish, nusxa, o‘chirish.<br>
+    ⌨️ Ctrl+Z bekor qilish · Delete o‘chirish
+  </div>
+  <div class="g2" style="margin-top:10px"><button class="btn" id="tTutReset">🎓 Mashqni qayta</button><a class="btn" href="sehr.html">✨ Eski versiya</a></div>
+</aside>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const MP_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
+const MP_WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
+const HAND_MODEL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+THREE.ColorManagement.enabled = false;
+const $ = s => document.querySelector(s);
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('qs2_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('qs2_' + k, JSON.stringify(v)); } catch (e) { } }
+};
+const S = { tool: 'draw', color: 0, sel: null, ar: false, skel: true, bloom: 1, size: 1, vb: 0.7, dwell: 700 };
+const COLORS = ['#00e5ff', '#8b7bff', '#ff4fd8', '#ff9a00', '#5dff9b', '#ffe14d', '#ff3b5c', '#ffffff'];
+
+/* ================= Renderer ================= */
+const canvas = $('#gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+const PR = Math.min(devicePixelRatio || 1, 1.75);
+renderer.setPixelRatio(PR); renderer.setSize(innerWidth, innerHeight);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x04050a);
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 200); camera.position.set(0, 0, 9);
+const composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.9, 0.5, 0.0); composer.addPass(bloom);
+let halfH, halfW;
+function computeView() { halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; halfW = halfH * camera.aspect; }
+computeView();
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
+  bloom.resolution.set(innerWidth, innerHeight); computeView(); computeCover(); cacheUI();
+});
+const toScreen = (p, out = {}) => { out.x = (p.x / halfW + 1) / 2 * innerWidth; out.y = (1 - p.y / halfH) / 2 * innerHeight; return out; };
+const toWorld = (sx, sy, out) => out.set((sx / innerWidth * 2 - 1) * halfW, -(sy / innerHeight * 2 - 1) * halfH, 0);
+
+function glowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+}
+const glowTex = glowTexture();
+const stars = (() => {
+  const n = 1800, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const u = Math.random() * 2 - 1, th = Math.random() * TAU, s = Math.sqrt(1 - u * u), r = 25 + Math.random() * 40; p[i * 3] = Math.cos(th) * s * r; p[i * 3 + 1] = u * r; p[i * 3 + 2] = Math.sin(th) * s * r - 10; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  const m = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.2, map: glowTex, color: 0x6a74cc, transparent: true, opacity: 0.45, depthWrite: false, blending: THREE.AdditiveBlending }));
+  scene.add(m); return m;
+})();
+
+function mkMat(size, alpha, boost) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uSize: { value: size }, uPR: { value: PR }, uAlpha: { value: alpha }, uBoost: { value: boost } },
+    vertexShader: `attribute float aSize; attribute vec3 aColor; uniform float uSize,uPR,uBoost; varying vec3 vC;
+      void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); gl_Position=projectionMatrix*mv;
+        gl_PointSize=max(1.0,uSize*aSize*uPR*(300.0/-mv.z)); vC=aColor*uBoost; }`,
+    fragmentShader: `uniform float uAlpha; varying vec3 vC;
+      void main(){ float d=length(gl_PointCoord-0.5); if(d>0.5) discard; float a=pow(1.0-d*2.0,1.6); gl_FragColor=vec4(vC,a*uAlpha); }`,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+}
+const objMat = mkMat(0.1, 1, 1), selMat = mkMat(0.12, 1, 1.35), hovMat = mkMat(0.11, 1, 1.2), prevMat = mkMat(0.1, 0.75, 1);
+
+/* ================= Shapes ================= */
+function rng(seed) { let a = seed >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const CIRCLE = Array.from({ length: 96 }, (_, i) => [Math.cos(i / 96 * TAU), Math.sin(i / 96 * TAU)]);
+const RECT = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+const TRI = [[0, 1], [-1, -0.8], [1, -0.8]];
+const STAR = Array.from({ length: 10 }, (_, k) => { const a = Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 0.42 : 1; return [Math.cos(a) * r, Math.sin(a) * r]; });
+const LINE = [[-1, 0], [1, 0]];
+function outlineOf(o) {
+  switch (o.kind) {
+    case 'circle': return { pts: CIRCLE, closed: true, verts: false };
+    case 'rect': return { pts: RECT, closed: true, verts: true };
+    case 'tri': return { pts: TRI, closed: true, verts: true };
+    case 'star': return { pts: STAR, closed: true, verts: true };
+    case 'line': return { pts: LINE, closed: false, verts: true };
+    case 'poly': return { pts: o.pts2, closed: true, verts: true };
+    default: return { pts: o.pts2, closed: !!o.closed, verts: false };
+  }
+}
+function pointInPoly(x, y, P) {
+  let inside = false;
+  for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+    const xi = P[i][0], yi = P[i][1], xj = P[j][0], yj = P[j][1];
+    if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi + 1e-12) + xi)) inside = !inside;
+  }
+  return inside;
+}
+const K = 2400;
+function makeGeo() {
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(K * 3), 3));
+  g.setAttribute('aColor', new THREE.BufferAttribute(new Float32Array(K * 3), 3));
+  g.setAttribute('aSize', new THREE.BufferAttribute(new Float32Array(K), 1));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 60); return g;
+}
+const tmpC = new THREE.Color();
+function fillGeo(o) {
+  const r = rng(o.seed), g = () => (r() + r() + r() - 1.5) * 0.6;
+  const P = o.geo.attributes.position.array, C = o.geo.attributes.aColor.array, Z = o.geo.attributes.aSize.array;
+  const ol = outlineOf(o), sp = ol.pts.map(p => [p[0] * o.sx, p[1] * o.sy]), n = sp.length, m = ol.closed ? n : n - 1;
+  const segs = []; let total = 0;
+  for (let i = 0; i < m; i++) { const a = sp[i], b = sp[(i + 1) % n], l = Math.hypot(b[0] - a[0], b[1] - a[1]); segs.push([a, b, l, total]); total += l; }
+  total = Math.max(total, 1e-4);
+  const along = t => { let lo = 0, hi = segs.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (segs[mid][3] <= t) lo = mid; else hi = mid - 1; } const s = segs[lo], u = s[2] ? (t - s[3]) / s[2] : 0; return [lerp(s[0][0], s[1][0], u), lerp(s[0][1], s[1][1], u)]; };
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9; for (const p of sp) { minx = Math.min(minx, p[0]); maxx = Math.max(maxx, p[0]); miny = Math.min(miny, p[1]); maxy = Math.max(maxy, p[1]); }
+  const fillPt = () => { for (let k = 0; k < 14; k++) { const x = lerp(minx, maxx, r()), y = lerp(miny, maxy, r()); if (pointInPoly(x, y, sp)) return [x, y]; } return along(r() * total); };
+  const ext = Math.max(o.sx, o.sy), d = o.kind === 'line' || o.kind === 'path' ? ext * 0.25 : Math.max(0.15, Math.min(o.sx, o.sy)) * 0.6;
+  const vIdx = ol.verts ? sp.map((_, i) => i) : sp.map((_, i) => i).filter(i => i % 8 === 0);
+  const pyr = ol.closed && n === 3, sphere = o.kind === 'circle';
+  const base = tmpC.set(COLORS[o.color]);
+  const br = base.r, bg = base.g, bb = base.b;
+  for (let i = 0, j = 0; i < K; i++, j += 3) {
+    let x, y, z = 0, b = 1; const q = r();
+    if (o.d3 && sphere) {
+      const u = r() * 2 - 1, th = r() * TAU, s = Math.sqrt(1 - u * u), shell = q < 0.85, rr = shell ? 1 : Math.cbrt(r()) * 0.5;
+      x = Math.cos(th) * s * o.sx * rr; y = u * o.sy * rr; z = Math.sin(th) * s * (o.sx + o.sy) / 2 * rr; b = shell ? (Math.abs(u) < 0.03 ? 1.3 : 0.85) : 0.35;
+    } else if (o.d3 && pyr) {
+      const h = Math.max(o.sx, o.sy) * 1.3, apex = [(sp[0][0] + sp[1][0] + sp[2][0]) / 3, (sp[0][1] + sp[1][1] + sp[2][1]) / 3];
+      if (q < 0.42) { [x, y] = along(r() * total); z = -h / 3; }
+      else if (q < 0.84) { const v = sp[(r() * 3) | 0], t = r(); x = lerp(v[0], apex[0], t); y = lerp(v[1], apex[1], t); z = lerp(-h / 3, h * 2 / 3, t); }
+      else { const k = (r() * 3) | 0, a = sp[k], c = sp[(k + 1) % 3]; let u = r(), w = r(); if (u + w > 1) { u = 1 - u; w = 1 - w; } x = a[0] + (c[0] - a[0]) * u + (apex[0] - a[0]) * w; y = a[1] + (c[1] - a[1]) * u + (apex[1] - a[1]) * w; z = -h / 3 + h * w; b = 0.28; }
+    } else if (o.d3) {
+      if (q < 0.6) { [x, y] = along(r() * total); z = r() < 0.5 ? -d : d; }
+      else if (q < 0.8) { const v = sp[vIdx[(r() * vIdx.length) | 0]]; x = v[0]; y = v[1]; z = lerp(-d, d, r()); }
+      else if (ol.closed && o.fill) { [x, y] = fillPt(); z = r() < 0.5 ? -d : d; b = 0.25; }
+      else { [x, y] = along(r() * total); z = lerp(-d, d, r()); b = 0.3; }
+    } else {
+      if (!ol.closed || !o.fill || q < 0.72) { [x, y] = along(r() * total); x += g() * 0.015; y += g() * 0.015; }
+      else { [x, y] = fillPt(); b = 0.26; }
+      z = g() * 0.02;
+    }
+    P[j] = x; P[j + 1] = y; P[j + 2] = z;
+    const sparkle = b > 0.5 && r() < 0.06;
+    C[j] = sparkle ? 1 : br * b; C[j + 1] = sparkle ? 1 : bg * b; C[j + 2] = sparkle ? 1 : bb * b;
+    Z[i] = b > 0.5 ? 0.8 + r() * 0.9 : 0.5 + r() * 0.5;
+  }
+  o.geo.attributes.position.needsUpdate = o.geo.attributes.aColor.needsUpdate = o.geo.attributes.aSize.needsUpdate = true;
+  o.dirty = false;
+}
+
+const OBJ = [];
+function addObj(d) {
+  const o = {
+    kind: d.kind, pts2: d.pts2 || null, closed: d.closed !== false, pos: new THREE.Vector3(d.x || 0, d.y || 0, 0),
+    sx: d.sx || 1, sy: d.sy || 1, rot: d.rot || 0, color: d.color ?? S.color, d3: !!d.d3, fill: d.fill !== false, spin: !!d.spin, spinA: d.spinA || 0,
+    state: d.state === 'float' ? 'float' : 'pinned', vel: new THREE.Vector3(d.vx || 0, d.vy || 0, 0), seed: d.seed || ((Math.random() * 1e9) | 0),
+    geo: makeGeo(), dirty: true, flash: 1, holder: null
+  };
+  o.pts = new THREE.Points(o.geo, objMat); o.pts.frustumCulled = false; scene.add(o.pts); OBJ.push(o); return o;
+}
+function removeObj(o) {
+  const i = OBJ.indexOf(o); if (i < 0) return;
+  for (const p of ptrs) if (p.obj === o) { p.obj = null; p.act = 'done'; }
+  scene.remove(o.pts); o.geo.dispose(); OBJ.splice(i, 1); if (S.sel === o) select(null);
+}
+const ser = o => ({ kind: o.kind, pts2: o.pts2, closed: o.closed, x: +o.pos.x.toFixed(3), y: +o.pos.y.toFixed(3), sx: +o.sx.toFixed(3), sy: +o.sy.toFixed(3), rot: +o.rot.toFixed(3), color: o.color, d3: o.d3, fill: o.fill, spin: o.spin, seed: o.seed, state: o.state, vx: +o.vel.x.toFixed(3), vy: +o.vel.y.toFixed(3) });
+const KINDS = ['circle', 'rect', 'tri', 'star', 'line', 'poly', 'path'];
+function restore(arr) {
+  for (const p of ptrs) if (p.obj) { p.obj = null; p.act = 'done'; }
+  while (OBJ.length) { const o = OBJ.pop(); scene.remove(o.pts); o.geo.dispose(); }
+  select(null);
+  for (const d of arr || []) if (d && KINDS.includes(d.kind) && ((d.kind !== 'poly' && d.kind !== 'path') || Array.isArray(d.pts2))) addObj(d);
+}
+function select(o) {
+  S.sel = o;
+  for (const x of OBJ) x.pts.material = x === o ? selMat : objMat;
+  updateActionUI();
+}
+const UNDO = [];
+const snapshot = () => OBJ.map(ser);
+function pushUndoSnap(s) { UNDO.push(s); if (UNDO.length > 60) UNDO.shift(); }
+const pushUndo = () => pushUndoSnap(snapshot());
+function undo() { const s = UNDO.pop(); if (!s) { toast('Bekor qiladigan amal yo‘q'); return; } restore(s); toast('↩️ Bekor qilindi'); }
+
+/* ================= Shape recognition (freehand → clean shape) ================= */
+const dist2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+function pathLen(p) { let L = 0; for (let i = 1; i < p.length; i++) L += dist2(p[i - 1], p[i]); return L; }
+function resample(pts, n) {
+  const L = pathLen(pts), step = L / (n - 1), out = [pts[0].slice()]; let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    let a = pts[i - 1]; const b = pts[i]; let d = dist2(a, b);
+    while (acc + d >= step && out.length < n) { const t = (step - acc) / d, q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; out.push(q); a = q; d = dist2(a, b); acc = 0; }
+    acc += d;
+  }
+  while (out.length < n) out.push(pts[pts.length - 1].slice());
+  return out;
+}
+function segDist(p, a, b) { const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy; if (!l2) return dist2(p, a); const t = clamp(((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / l2, 0, 1); return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy); }
+function dp(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  let dmax = 0, idx = 0; const a = pts[0], b = pts[pts.length - 1];
+  for (let i = 1; i < pts.length - 1; i++) { const d = segDist(pts[i], a, b); if (d > dmax) { dmax = d; idx = i; } }
+  if (dmax > eps) { const l = dp(pts.slice(0, idx + 1), eps), rr = dp(pts.slice(idx), eps); return l.slice(0, -1).concat(rr); }
+  return [a, b];
+}
+function cornersClosed(pts, eps, minEdge) {
+  let far = 0, fi = 0; for (let i = 0; i < pts.length; i++) { const d = dist2(pts[0], pts[i]); if (d > far) { far = d; fi = i; } }
+  const A = dp(pts.slice(0, fi + 1), eps), B = dp(pts.slice(fi).concat([pts[0]]), eps);
+  let v = A.slice(0, -1).concat(B.slice(0, -1));
+  for (let pass = 0; pass < 4; pass++) {
+    let changed = false;
+    for (let i = 0; i < v.length && v.length > 3; i++) {
+      const p = v[(i - 1 + v.length) % v.length], c = v[i], nx = v[(i + 1) % v.length];
+      const a1 = Math.atan2(p[1] - c[1], p[0] - c[0]), a2 = Math.atan2(nx[1] - c[1], nx[0] - c[0]);
+      const ang = Math.abs(wrapA(a1 - a2));
+      if (ang > 2.6 || dist2(c, nx) < minEdge) { v.splice(i, 1); changed = true; i--; }
+    }
+    if (!changed) break;
+  }
+  return v;
+}
+function chaikin(p, closed, it = 2) {
+  for (let k = 0; k < it; k++) {
+    const o = [], n = p.length, m = closed ? n : n - 1; if (!closed) o.push(p[0]);
+    for (let i = 0; i < m; i++) { const a = p[i], b = p[(i + 1) % n]; o.push([0.75 * a[0] + 0.25 * b[0], 0.75 * a[1] + 0.25 * b[1]], [0.25 * a[0] + 0.75 * b[0], 0.25 * a[1] + 0.75 * b[1]]); }
+    if (!closed) o.push(p[n - 1]); p = o;
+  }
+  return p;
+}
+function normalizeShape(pts, closed, kind, label) {
+  let cx = 0, cy = 0; for (const p of pts) { cx += p[0]; cy += p[1]; } cx /= pts.length; cy /= pts.length;
+  let R = 1e-3; for (const p of pts) R = Math.max(R, Math.hypot(p[0] - cx, p[1] - cy));
+  return { kind, label, closed, x: cx, y: cy, sx: R, sy: R, rot: 0, pts2: pts.map(p => [+((p[0] - cx) / R).toFixed(4), +((p[1] - cy) / R).toFixed(4)]) };
+}
+function recognize(stroke) {
+  if (stroke.length < 6) return null;
+  const raw = stroke.map(v => [v.x, v.y]), pts = resample(raw, 64), len = pathLen(pts);
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9; for (const p of pts) { minx = Math.min(minx, p[0]); maxx = Math.max(maxx, p[0]); miny = Math.min(miny, p[1]); maxy = Math.max(maxy, p[1]); }
+  const w = maxx - minx, h = maxy - miny, diag = Math.hypot(w, h);
+  if (diag < 0.35) return null;
+  const gap = dist2(pts[0], pts[63]), closed = gap < Math.max(0.45, diag * 0.32);
+  if (!closed) {
+    if (gap / len > 0.85) { const a = pts[0], b = pts[63]; return { kind: 'line', label: '➖ Chiziq', x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2, sx: gap / 2, sy: 0.05, rot: Math.atan2(b[1] - a[1], b[0] - a[0]) }; }
+    return normalizeShape(chaikin(dp(pts, diag * 0.012), false, 2), false, 'path', '〰️ Egri chiziq');
+  }
+  const loop = pts.slice(0, 63);
+  let cx = 0, cy = 0; for (const p of loop) { cx += p[0]; cy += p[1]; } cx /= loop.length; cy /= loop.length;
+  const rad = loop.map(p => Math.hypot(p[0] - cx, p[1] - cy)), mr = rad.reduce((a, b) => a + b, 0) / rad.length;
+  // roundness measured after normalising the bbox to a square, so ellipses count as round too
+  const bx = (minx + maxx) / 2, by = (miny + maxy) / 2, nw = Math.max(w, 1e-3) / 2, nh = Math.max(h, 1e-3) / 2;
+  const rn = loop.map(p => Math.hypot((p[0] - bx) / nw, (p[1] - by) / nh)), mn = rn.reduce((a, b) => a + b, 0) / rn.length;
+  const cvN = Math.sqrt(rn.reduce((a, r) => a + (r - mn) * (r - mn), 0) / rn.length) / mn;
+  const v = cornersClosed(loop, diag * 0.085, diag * 0.13);
+  if (v.length >= 5 && cvN < 0.11 || cvN < 0.045) {
+    const asp = w / Math.max(h, 1e-3);
+    if (asp > 0.8 && asp < 1.25) return { kind: 'circle', label: '⭕ Aylana', x: cx, y: cy, sx: mr, sy: mr, rot: 0 };
+    return { kind: 'circle', label: '⬭ Ellips', x: bx, y: by, sx: w / 2, sy: h / 2, rot: 0 };
+  }
+  if (v.length === 3) {
+    let area = 0; for (let i = 0; i < loop.length; i++) { const a = loop[i], b = loop[(i + 1) % loop.length]; area += a[0] * b[1] - b[0] * a[1]; }
+    if (Math.abs(area) / 2 / (w * h) > 0.68 && cvN < 0.16) return { kind: 'circle', label: '⬭ Ellips', x: bx, y: by, sx: w / 2, sy: h / 2, rot: 0 };
+    return normalizeShape(v, true, 'poly', '🔺 Uchburchak');
+  }
+  if (v.length === 4) {
+    let best = 0, th = 0; for (let i = 0; i < 4; i++) { const a = v[i], b = v[(i + 1) % 4], l = dist2(a, b); if (l > best) { best = l; th = Math.atan2(b[1] - a[1], b[0] - a[0]); } }
+    th = wrapA(th); while (th > Math.PI / 4) th -= Math.PI / 2; while (th < -Math.PI / 4) th += Math.PI / 2;
+    if (Math.abs(th) < 0.2) th = 0;
+    const c = Math.cos(-th), s = Math.sin(-th); let a0 = 1e9, a1 = -1e9, b0 = 1e9, b1 = -1e9;
+    for (const p of loop) { const x = (p[0] - cx) * c - (p[1] - cy) * s, y = (p[0] - cx) * s + (p[1] - cy) * c; a0 = Math.min(a0, x); a1 = Math.max(a1, x); b0 = Math.min(b0, y); b1 = Math.max(b1, y); }
+    let hw = (a1 - a0) / 2, hh = (b1 - b0) / 2; const mx = (a0 + a1) / 2, my = (b0 + b1) / 2;
+    const ox = cx + mx * Math.cos(th) - my * Math.sin(th), oy = cy + mx * Math.sin(th) + my * Math.cos(th);
+    // a rectangle fills its bounding box (~100%), an ellipse only ~78%
+    let area = 0; for (let i = 0; i < loop.length; i++) { const a = loop[i], b = loop[(i + 1) % loop.length]; area += a[0] * b[1] - b[0] * a[1]; }
+    if (Math.abs(area) / 2 / (4 * hw * hh) < 0.86 && cvN < 0.16) {
+      const round = Math.abs(hw - hh) / Math.max(hw, hh) < 0.2;
+      return { kind: 'circle', label: round ? '⭕ Aylana' : '⬭ Ellips', x: ox, y: oy, sx: round ? (hw + hh) / 2 : hw, sy: round ? (hw + hh) / 2 : hh, rot: th };
+    }
+    const sq = Math.abs(hw - hh) / Math.max(hw, hh) < 0.18; if (sq) hw = hh = (hw + hh) / 2;
+    return { kind: 'rect', label: sq ? '⬜ Kvadrat' : '▭ To‘rtburchak', x: ox, y: oy, sx: hw, sy: hh, rot: th };
+  }
+  if (v.length >= 8 && v.length <= 12) {
+    const rv = v.map(p => Math.hypot(p[0] - cx, p[1] - cy)), mv = rv.reduce((a, b) => a + b, 0) / rv.length;
+    let alt = 0; for (let i = 0; i < rv.length; i++) if ((rv[i] > mv) !== (rv[(i + 1) % rv.length] > mv)) alt++;
+    if (alt >= rv.length - 2) { const top = v[rv.indexOf(Math.max(...rv))]; return { kind: 'star', label: '⭐ Yulduz', x: cx, y: cy, sx: Math.max(...rv), sy: Math.max(...rv), rot: wrapA(Math.atan2(top[1] - cy, top[0] - cx) - Math.PI / 2) }; }
+  }
+  if (v.length >= 5 && v.length <= 8) return normalizeShape(v, true, 'poly', `⬠ ${v.length} burchak`);
+  return normalizeShape(chaikin(resample(raw, 48).slice(0, 47), true, 2), true, 'path', '✏️ Erkin shakl');
+}
+
+/* ================= Camera + hands ================= */
+const video = $('#video');
+const cov = { dw: 1, dh: 1, ox: 0, oy: 0 };
+let VA = 16 / 9, camOn = false, camStream = null, handLm = null, lastVT = -1, mp = null;
+function computeCover() {
+  const vw = video.videoWidth || 1280, vh = video.videoHeight || 720, s = Math.max(innerWidth / vw, innerHeight / vh);
+  cov.dw = vw * s; cov.dh = vh * s; cov.ox = (innerWidth - cov.dw) / 2; cov.oy = (innerHeight - cov.dh) / 2;
+}
+function lmToWorld(l, out) {
+  const sx = cov.ox + (1 - l.x) * cov.dw, sy = cov.oy + l.y * cov.dh;
+  return out.set((sx / innerWidth * 2 - 1) * halfW, -(sy / innerHeight * 2 - 1) * halfH, -l.z * cov.dw * (2 * halfW / innerWidth) * 0.6);
+}
+function setAR(on) { S.ar = on && camOn; document.body.classList.toggle('ar', S.ar); stars.visible = !S.ar; $('#tAR').classList.toggle('on', S.ar); }
+async function openCamera(deviceId) {
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  const v = { width: { ideal: 1280 }, height: { ideal: 720 } }; if (deviceId) v.deviceId = { exact: deviceId }; else v.facingMode = 'user';
+  camStream = await navigator.mediaDevices.getUserMedia({ video: v, audio: false });
+  video.srcObject = camStream; await video.play();
+  VA = (video.videoWidth || 16) / (video.videoHeight || 9); computeCover(); lastVT = -1;
+}
+async function listCameras() {
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    const cur = camStream && camStream.getVideoTracks()[0].getSettings().deviceId;
+    $('#camSel').innerHTML = cams.map((c, i) => `<option value="${c.deviceId}" ${c.deviceId === cur ? 'selected' : ''}>${(c.label || 'Kamera ' + (i + 1)).slice(0, 40).replace(/</g, '')}</option>`).join('');
+  } catch (e) { }
+}
+async function startCamera() {
+  const st = $('#startStatus');
+  try {
+    st.textContent = '📷 Kameraga ruxsat so‘ralmoqda…';
+    await openCamera(null);
+    st.textContent = '🧠 Qo‘lni taniydigan model yuklanmoqda…';
+    mp = await import(MP_URL);
+    const vision = await mp.FilesetResolver.forVisionTasks(MP_WASM);
+    const opts = delegate => ({ baseOptions: { modelAssetPath: HAND_MODEL, delegate }, runningMode: 'VIDEO', numHands: 2, minHandDetectionConfidence: 0.6, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5 });
+    try { handLm = await mp.HandLandmarker.createFromOptions(vision, opts('GPU')); } catch (e) { handLm = await mp.HandLandmarker.createFromOptions(vision, opts('CPU')); }
+    if (mp.HandLandmarker.HAND_CONNECTIONS) HAND_CONN = mp.HandLandmarker.HAND_CONNECTIONS.map(c => [c.start, c.end]);
+    camOn = true; setAR(true); listCameras();
+    return true;
+  } catch (e) {
+    console.error(e);
+    toast(e.name === 'NotAllowedError' ? 'Kameraga ruxsat berilmadi — sichqoncha bilan ishlaysiz' : 'Kamera ishga tushmadi — sichqoncha bilan ishlaysiz');
+    return false;
+  }
+}
+class OneEuro {
+  constructor(minCut = 1.5, beta = 0.6, dCut = 1) { this.mc = minCut; this.b = beta; this.dc = dCut; this.x = null; this.dx = 0; this.t = 0; }
+  static a(cut, dt) { const tau = 1 / (TAU * cut); return 1 / (1 + tau / dt); }
+  f(x, t) {
+    if (this.x === null) { this.x = x; this.t = t; return x; }
+    const dt = Math.max(1e-3, t - this.t); this.t = t;
+    this.dx += OneEuro.a(this.dc, dt) * ((x - this.x) / dt - this.dx);
+    this.x += OneEuro.a(this.mc + this.b * Math.abs(this.dx), dt) * (x - this.x); return this.x;
+  }
+}
+let HAND_CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20]];
+const slots = [0, 1].map(() => ({ present: false, sm: Array.from({ length: 21 }, () => new THREE.Vector3()), hs: 0.2, pinch: 1, pinching: false, pc: 0, filt: null, lost: 0 }));
+const wTmp = new THREE.Vector3();
+function onHands(res, now) {
+  const L = res.landmarks || [];
+  const det = L.map(lm => ({ lm, w: lmToWorld(lm[0], new THREE.Vector3()) }));
+  const pairs = [], assign = [null, null], used = new Set();
+  det.forEach((d, i) => slots.forEach((s, k) => pairs.push({ i, k, d: s.present ? s.sm[0].distanceTo(d.w) : 50 + k })));
+  pairs.sort((a, b) => a.d - b.d);
+  for (const p of pairs) { if (used.has(p.i) || assign[p.k]) continue; assign[p.k] = det[p.i]; used.add(p.i); }
+  if (det.length) tut('hand');
+  const t = now / 1000;
+  for (let s = 0; s < 2; s++) {
+    const slot = slots[s], d = assign[s];
+    if (!d) { if (slot.present && now - slot.lost > 300) { slot.present = false; slot.pinching = false; slot.filt = null; } continue; }
+    slot.lost = now; slot.present = true;
+    const lm = d.lm, D = (a, b) => Math.hypot((lm[a].x - lm[b].x) * VA, lm[a].y - lm[b].y, (lm[a].z - lm[b].z) * VA);
+    slot.hs = D(0, 9) || 1e-4; slot.pinch = D(4, 8) / slot.hs;
+    // pinch with hysteresis + 2-frame confirmation (no flicker)
+    const want = slot.pinching ? slot.pinch < 0.55 : slot.pinch < 0.33;
+    if (want !== slot.pinching) { slot.pc++; if (slot.pc >= 2) { slot.pinching = want; slot.pc = 0; } } else slot.pc = 0;
+    if (!slot.filt) slot.filt = Array.from({ length: 63 }, (_, i) => new OneEuro(i % 3 === 2 ? 0.8 : 1.6, 0.6));
+    const f = slot.filt;
+    for (let k = 0; k < 21; k++) { lmToWorld(lm[k], wTmp); slot.sm[k].set(f[k * 3].f(wTmp.x, t), f[k * 3 + 1].f(wTmp.y, t), f[k * 3 + 2].f(wTmp.z, t)); }
+  }
+}
+function detect(now) {
+  if (!camOn || !handLm || video.readyState < 2 || video.currentTime === lastVT) return;
+  lastVT = video.currentTime;
+  try { onHands(handLm.detectForVideo(video, now), now); } catch (e) { console.warn(e); }
+}
+
+/* hand skeleton (faint) */
+const skelPts = new Float32Array(42 * 3), skelLines = new Float32Array(2 * 21 * 6);
+const skelPG = new THREE.BufferGeometry(); skelPG.setAttribute('position', new THREE.BufferAttribute(skelPts, 3));
+const skelLG = new THREE.BufferGeometry(); skelLG.setAttribute('position', new THREE.BufferAttribute(skelLines, 3));
+const skelP = new THREE.Points(skelPG, new THREE.PointsMaterial({ size: 0.16, map: glowTex, color: 0x7df9ff, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }));
+const skelL = new THREE.LineSegments(skelLG, new THREE.LineBasicMaterial({ color: 0x5fd8ff, transparent: true, opacity: 0.25, depthWrite: false, blending: THREE.AdditiveBlending }));
+skelP.frustumCulled = skelL.frustumCulled = false; scene.add(skelP, skelL);
+function drawSkeleton() {
+  let sp = 0, sl = 0;
+  for (const s of slots) {
+    if (!s.present || !S.skel) continue;
+    for (let k = 0; k < 21; k++) s.sm[k].toArray(skelPts, (sp++) * 3);
+    for (const [i, j] of HAND_CONN) { s.sm[i].toArray(skelLines, (sl++) * 3); s.sm[j].toArray(skelLines, (sl++) * 3); }
+  }
+  skelPG.setDrawRange(0, sp); skelLG.setDrawRange(0, sl);
+  skelPG.attributes.position.needsUpdate = skelLG.attributes.position.needsUpdate = true;
+}
+
+/* freehand stroke trail */
+const MAXT = 6000, trailPos = new Float32Array(MAXT * 3);
+const trailGeo = new THREE.BufferGeometry(); trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3)); trailGeo.setDrawRange(0, 0);
+const trailMat = new THREE.PointsMaterial({ size: 0.13, map: glowTex, color: 0xffffff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending });
+const trail = new THREE.Points(trailGeo, trailMat); trail.frustumCulled = false; scene.add(trail);
+function drawTrails() {
+  let n = 0;
+  for (const p of ptrs) if (p.stroke) for (const v of p.stroke) { if (n >= MAXT) break; v.toArray(trailPos, (n++) * 3); }
+  trailGeo.setDrawRange(0, n); trailGeo.attributes.position.needsUpdate = true; trailMat.color.set(COLORS[S.color]);
+}
+
+/* little sparkle feedback (not explosions) */
+const SPM = 1500, spPos = new Float32Array(SPM * 3), spVel = new Float32Array(SPM * 3), spLife = new Float32Array(SPM); let spHead = 0;
+const spGeo = new THREE.BufferGeometry(); spGeo.setAttribute('position', new THREE.BufferAttribute(spPos, 3));
+const spMat = new THREE.PointsMaterial({ size: 0.12, map: glowTex, color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
+const sparks = new THREE.Points(spGeo, spMat); sparks.frustumCulled = false; scene.add(sparks);
+for (let i = 0; i < SPM; i++) spPos[i * 3 + 2] = -999;
+function sparkle(p, n = 60) {
+  for (let k = 0; k < n; k++) { const i = spHead, j = i * 3; spHead = (spHead + 1) % SPM; const a = Math.random() * TAU, s = 0.6 + Math.random() * 1.6; spPos[j] = p.x; spPos[j + 1] = p.y; spPos[j + 2] = 0.1; spVel[j] = Math.cos(a) * s; spVel[j + 1] = Math.sin(a) * s; spLife[i] = 0.5 + Math.random() * 0.4; }
+}
+function updateSparks(dt) {
+  for (let i = 0, j = 0; i < SPM; i++, j += 3) {
+    if (spLife[i] <= 0) { spPos[j + 2] = -999; continue; }
+    spLife[i] -= dt; spVel[j] *= 0.93; spVel[j + 1] *= 0.93; spPos[j] += spVel[j] * dt; spPos[j + 1] += spVel[j + 1] * dt;
+  }
+  spGeo.attributes.position.needsUpdate = true;
+}
+
+/* ================= Air UI (palette selected by hand) ================= */
+const TOOLS = [['draw', '✍️', 'Chizish'], ['circle', '⭕', 'Aylana'], ['rect', '⬜', 'Kvadrat'], ['tri', '🔺', 'Uchburch.'], ['star', '⭐', 'Yulduz'], ['line', '➖', 'Chiziq']];
+const ACTS = [['color', '🎨', 'Rang'], ['d3', '🧊', '3D'], ['fill', '◼️', 'To‘ldir'], ['spin', '🔄', 'Aylantir'], ['copy', '📋', 'Nusxa'], ['del', '🗑', 'O‘chir'], ['undo', '↩️', 'Bekor'], ['clear', '🧹', 'Tozala']];
+const NEED_SEL = new Set(['d3', 'fill', 'spin', 'copy', 'del']);
+function mkTool(parent, attr, [k, e, n]) {
+  const b = document.createElement('button'); b.className = 'tool'; b.dataset[attr] = k; b.innerHTML = `<span>${e}</span>${n}`;
+  b.onclick = () => activate(b, false); parent.appendChild(b); return b;
+}
+$('#palL').innerHTML = '<div class="cap">Asbob</div>'; TOOLS.forEach(t => mkTool($('#palL'), 'tool', t)); mkTool($('#palL'), 'act', ['tut', '🎓', 'Mashq']);
+$('#palR').innerHTML = '<div class="cap">Ishlov</div>'; ACTS.forEach(t => mkTool($('#palR'), 'act', t));
+const colorDot = document.createElement('i'); colorDot.className = 'dot'; $('[data-act=color]').appendChild(colorDot);
+let uiRects = [];
+function cacheUI() { uiRects = [...document.querySelectorAll('.tool')].map(el => ({ el, r: el.getBoundingClientRect() })); }
+setTimeout(cacheUI, 50); setInterval(cacheUI, 1500);
+const scr = {};
+function uiHit(p) { toScreen(p, scr); for (const u of uiRects) { const r = u.r; if (scr.x > r.left - 8 && scr.x < r.right + 8 && scr.y > r.top - 6 && scr.y < r.bottom + 6) return u.el; } return null; }
+function setTool(t) {
+  S.tool = t; document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+  const m = TOOLS.find(x => x[0] === t); toast(`${m[1]} ${m[2]} — bo‘sh joyda 🤏 chimdib ${t === 'draw' ? 'chizing' : 'cho‘zing'}`);
+}
+function updateActionUI() {
+  document.querySelectorAll('[data-act]').forEach(b => b.classList.toggle('dis', NEED_SEL.has(b.dataset.act) && !S.sel));
+  colorDot.style.background = COLORS[S.color];
+  const s = S.sel; if (!s) return;
+  $('[data-act=d3]').classList.toggle('on', s.d3); $('[data-act=fill]').classList.toggle('on', s.fill); $('[data-act=spin]').classList.toggle('on', s.spin);
+}
+function needSel() { if (S.sel) return false; toast('👆 Avval shaklni 🤏 chimdib tanlang'); return true; }
+const ACTIONS = {
+  color() { S.color = (S.color + 1) % COLORS.length; if (S.sel) { pushUndo(); S.sel.color = S.color; S.sel.dirty = true; } updateActionUI(); toast('🎨 Rang almashdi'); },
+  d3() { if (needSel()) return; const o = S.sel; pushUndo(); o.d3 = !o.d3; o.spin = o.d3; if (!o.d3) o.spinA = 0; o.dirty = true; o.flash = 1; updateActionUI(); toast(o.d3 ? '🧊 3D bo‘ldi' : '▭ Yana 2D'); },
+  fill() { if (needSel()) return; pushUndo(); S.sel.fill = !S.sel.fill; S.sel.dirty = true; updateActionUI(); toast(S.sel.fill ? '◼️ To‘ldirildi' : '◻️ Faqat chegara'); },
+  spin() { if (needSel()) return; pushUndo(); S.sel.spin = !S.sel.spin; updateActionUI(); toast(S.sel.spin ? '🔄 Aylanmoqda' : '⏸ To‘xtadi'); },
+  copy() { if (needSel()) return; pushUndo(); const d = ser(S.sel); d.x += 0.8; d.y -= 0.6; d.seed = (Math.random() * 1e9) | 0; d.state = 'pinned'; const c = addObj(d); sparkle(c.pos, 40); select(c); toast('📋 Nusxa olindi'); },
+  del() { if (needSel()) return; pushUndo(); const o = S.sel; sparkle(o.pos, 80); removeObj(o); toast('🗑 O‘chirildi — ↩️ bilan qaytarish mumkin'); },
+  undo() { undo(); },
+  clear() { if (!OBJ.length) { toast('Ekran allaqachon bo‘sh'); return; } pushUndo(); restore([]); toast('🧹 Tozalandi — ↩️ bilan qaytarish mumkin'); },
+  tut() { showTut(true); }
+};
+function activate(el, byHand) {
+  const t = el.dataset.tool, a = el.dataset.act;
+  if (t) setTool(t); else if (ACTIONS[a]) ACTIONS[a]();
+  if (byHand && a && a !== 'tut') tut('action');
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
+
+/* ================= Pointers (2 hands + mouse) ================= */
+const mouse = { x: 0, y: 0, down: false, over: false, t: -1e9 };
+const mkPtr = id => ({ id, present: false, pos: new THREE.Vector3(), down: false, prevDown: false, act: null, obj: null, start: new THREE.Vector3(), t0: 0, hoverEl: null, hoverT: 0, fired: null, stroke: null, partner: null, hist: [], off: new THREE.Vector3(), sc: null, snap: null, moved: 0, hovObj: null });
+const ptrs = [mkPtr(0), mkPtr(1), mkPtr('m')];
+const curEls = [$('#cur0'), $('#cur1')];
+function readPtrs(now) {
+  for (let i = 0; i < 2; i++) {
+    const s = slots[i], p = ptrs[i]; p.present = s.present;
+    if (s.present) { p.pos.copy(s.sm[4]).add(s.sm[8]).multiplyScalar(0.5).setZ(0); p.down = s.pinching; } else p.down = false;
+  }
+  const m = ptrs[2]; m.present = mouse.over && now - mouse.t < 4000 || mouse.down; toWorld(mouse.x, mouse.y, m.pos); m.down = mouse.down;
+}
+function hitObj(p) {
+  let best = null, ba = Infinity;
+  for (const o of OBJ) {
+    if (o.holder) continue;
+    const dx = p.x - o.pos.x, dy = p.y - o.pos.y, c = Math.cos(-o.rot), s = Math.sin(-o.rot), lx = dx * c - dy * s, ly = dx * s + dy * c;
+    const m = 0.3; if (Math.abs(lx) < o.sx + m && Math.abs(ly) < o.sy + m) { const a = (o.sx + m) * (o.sy + m); if (a < ba) { ba = a; best = o; } }
+  }
+  return best;
+}
+function shapeFromBox(tool, A, B) {
+  const mx = (A.x + B.x) / 2, my = (A.y + B.y) / 2;
+  if (tool === 'line') { const len = A.distanceTo(B); return len < 0.3 ? null : { kind: 'line', x: mx, y: my, sx: len / 2, sy: 0.05, rot: Math.atan2(B.y - A.y, B.x - A.x) }; }
+  let w = Math.abs(B.x - A.x) / 2, h = Math.abs(B.y - A.y) / 2; if (Math.max(w, h) < 0.15) return null;
+  if (Math.abs(w - h) / Math.max(w, h) < 0.2) w = h = (w + h) / 2;
+  return { kind: tool, x: mx, y: my, sx: Math.max(w, 0.08), sy: Math.max(h, 0.08), rot: 0 };
+}
+let preview = null;
+function showPreview(spec) {
+  if (!spec) { if (preview) preview.pts.visible = false; return; }
+  if (!preview) { preview = { kind: 'circle', pos: new THREE.Vector3(), sx: 1, sy: 1, rot: 0, color: 0, d3: false, fill: true, seed: 7, geo: makeGeo() }; preview.pts = new THREE.Points(preview.geo, prevMat); preview.pts.frustumCulled = false; scene.add(preview.pts); }
+  Object.assign(preview, { kind: spec.kind, sx: spec.sx, sy: spec.sy, rot: spec.rot, color: S.color, pts2: null, closed: true });
+  preview.pos.set(spec.x, spec.y, 0); fillGeo(preview);
+  preview.pts.visible = true; preview.pts.position.copy(preview.pos); preview.pts.rotation.set(0, 0, spec.rot);
+}
+function corners(c) { return c.partner && c.partner.act === 'create2' ? [c.pos, c.partner.pos] : [c.start, c.pos]; }
+function startAct(p, now) {
+  p.t0 = now; p.start.copy(p.pos); p.hist.length = 0; p.moved = 0; p.partner = null;
+  const grabber = ptrs.find(q => q !== p && q.act === 'grab' && q.obj);
+  if (grabber) { // second hand: scale + rotate the held shape
+    const o = grabber.obj, d = p.pos.distanceTo(grabber.pos);
+    p.act = 'scale'; p.obj = o; p.partner = grabber; p.sc = { d0: Math.max(d, 0.25), a0: Math.atan2(p.pos.y - grabber.pos.y, p.pos.x - grabber.pos.x), sx: o.sx, sy: o.sy, rot: o.rot, snap: snapshot() };
+    return;
+  }
+  const creator = ptrs.find(q => q !== p && q.act === 'create' && !q.partner && now - q.t0 < 900);
+  if (creator) { p.act = 'create2'; p.partner = creator; creator.partner = p; return; }
+  const o = hitObj(p.pos);
+  if (o) { p.act = 'grab'; p.obj = o; o.holder = p; o.state = 'pinned'; o.vel.set(0, 0, 0); p.off.copy(o.pos).sub(p.pos); p.snap = snapshot(); select(o); return; }
+  if (S.tool === 'draw') { p.act = 'draw'; p.stroke = [p.pos.clone()]; return; }
+  p.act = 'create';
+}
+function moveAct(p, now, dt) {
+  if (p.act === 'grab' && p.obj) {
+    const o = p.obj, tx = p.pos.x + p.off.x, ty = p.pos.y + p.off.y;
+    p.moved += Math.hypot(tx - o.pos.x, ty - o.pos.y);
+    const k = 1 - Math.exp(-dt * 22); o.pos.x = lerp(o.pos.x, tx, k); o.pos.y = lerp(o.pos.y, ty, k);
+    p.hist.push({ t: now, x: o.pos.x, y: o.pos.y }); while (p.hist.length > 7) p.hist.shift();
+  } else if (p.act === 'scale') {
+    const g = p.partner, o = p.obj;
+    if (!g || g.act !== 'grab' || g.obj !== o) { p.act = 'done'; return; }
+    const d = p.pos.distanceTo(g.pos), a = Math.atan2(p.pos.y - g.pos.y, p.pos.x - g.pos.x), k = d / p.sc.d0;
+    o.sx = clamp(p.sc.sx * k, 0.08, 9); o.sy = clamp(p.sc.sy * k, 0.05, 9); o.rot = p.sc.rot + wrapA(a - p.sc.a0); o.dirty = true;
+  } else if (p.act === 'create') {
+    const [A, B] = corners(p); showPreview(shapeFromBox(S.tool, A, B));
+  } else if (p.act === 'draw') {
+    const last = p.stroke[p.stroke.length - 1];
+    if (last.distanceTo(p.pos) > 0.03 && p.stroke.length < 2500) p.stroke.push(p.pos.clone());
+  }
+}
+function endAct(p, now) {
+  const a = p.act;
+  if (a === 'grab') {
+    const o = p.obj; p.obj = null; p.act = null;
+    if (o) {
+      o.holder = null;
+      if (trashHot) { pushUndoSnap(p.snap); sparkle(o.pos, 90); removeObj(o); trashHot = false; toast('🗑 O‘chirildi — ↩️ bilan qaytarish mumkin'); }
+      else {
+        const H = p.hist; let vx = 0, vy = 0;
+        if (H.length > 2) { const A = H[0], B = H[H.length - 1], dts = Math.max(0.016, (B.t - A.t) / 1000); vx = (B.x - A.x) / dts; vy = (B.y - A.y) / dts; }
+        const sp = Math.hypot(vx, vy);
+        if (sp > 9) { o.state = 'float'; o.vel.set(vx, vy, 0).multiplyScalar(Math.min(1, 6 / sp)); toast('🌊 Suzib ketdi — ushlab olsangiz to‘xtaydi'); }
+        if (p.moved > 0.08) { pushUndoSnap(p.snap); o.flash = 0.8; if (p.id !== 'm') tut('move'); }
+      }
+    }
+  } else if (a === 'scale') { p.act = null; if (p.sc) pushUndoSnap(p.sc.snap); if (p.id !== 'm') tut('scale'); p.sc = null; p.obj = null; }
+  else if (a === 'create' || a === 'create2') {
+    const c = a === 'create' ? p : p.partner;
+    if (c && (c.act === 'create')) {
+      const [A, B] = corners(c), spec = shapeFromBox(S.tool, A, B);
+      if (spec) { pushUndo(); const o = addObj(spec); sparkle(o.pos, 50); select(o); const m = TOOLS.find(x => x[0] === S.tool); toast(`${m[1]} ${m[2]} tayyor — 🤏 ushlab ishlov bering`); }
+      const other = c.partner; c.act = c === p ? null : 'done'; c.partner = null;
+      if (other) { other.act = other === p ? null : 'done'; other.partner = null; }
+    }
+    showPreview(null); p.act = null;
+  } else if (a === 'draw') {
+    const spec = recognize(p.stroke || []); p.stroke = null; p.act = null;
+    if (spec) { pushUndo(); const o = addObj(spec); sparkle(o.pos, 50); select(o); toast(`${spec.label} tanildi`); if (p.id !== 'm') tut('draw'); }
+    else toast('Kattaroq chizing ✍️');
+  } else p.act = null;
+  p.partner = null;
+}
+function processPtrs(now, dt) {
+  for (const p of ptrs) {
+    if (!p.present) {
+      if (p.act) endAct(p, now);
+      p.down = p.prevDown = false;
+      if (p.hoverEl) { p.hoverEl.classList.remove('hover'); p.hoverEl.style.setProperty('--p', 0); p.hoverEl = null; }
+      continue;
+    }
+    const isHand = p.id !== 'm';
+    if (isHand) {
+      const el = (!p.act || p.act === 'ui') ? uiHit(p.pos) : null;
+      if (el !== p.hoverEl) {
+        if (p.hoverEl) { p.hoverEl.classList.remove('hover'); p.hoverEl.style.setProperty('--p', 0); }
+        p.hoverEl = el; p.hoverT = now; if (!el) p.fired = null; else if (p.fired !== el) p.fired = null;
+      }
+      if (el) {
+        el.classList.add('hover');
+        if (p.fired !== el) { const q = (now - p.hoverT) / S.dwell; el.style.setProperty('--p', clamp(q, 0, 1)); if (q >= 1 && !p.down) { activate(el, true); p.fired = el; el.style.setProperty('--p', 0); } }
+      }
+    }
+    const down = p.down, edgeDown = down && !p.prevDown, edgeUp = !down && p.prevDown; p.prevDown = down;
+    if (edgeDown) {
+      if (isHand) tut('pinch');
+      if (isHand && p.hoverEl) { if (p.fired !== p.hoverEl) { activate(p.hoverEl, true); p.fired = p.hoverEl; p.hoverEl.style.setProperty('--p', 0); } p.act = 'ui'; }
+      else startAct(p, now);
+    }
+    if (down && p.act) moveAct(p, now, dt);
+    if (edgeUp) endAct(p, now);
+    p.hovObj = !p.act ? hitObj(p.pos) : null;
+  }
+}
+function drawCursors() {
+  for (let i = 0; i < 2; i++) {
+    const p = ptrs[i], el = curEls[i];
+    if (!p.present) { el.style.display = 'none'; continue; }
+    toScreen(p.pos, scr); el.style.display = 'block'; el.style.transform = `translate(${scr.x}px,${scr.y}px)`;
+    el.classList.toggle('pinch', p.down); el.classList.toggle('ui', !!p.hoverEl); el.classList.toggle('obj', !!p.hovObj && !p.hoverEl);
+    const tl = p.hoverEl ? '👆' : p.act === 'grab' ? '✋' : p.act === 'scale' ? '↔️' : p.hovObj ? '✋' : TOOLS.find(x => x[0] === S.tool)[1];
+    if (el.firstChild.textContent !== tl) el.firstChild.textContent = tl;
+  }
+}
+let statusTxt = '';
+function updateStatus() {
+  let t;
+  const acts = ptrs.filter(p => p.present).map(p => p.act);
+  if (acts.includes('scale')) t = '↔️ Qo‘llarni yaqinlashtiring/uzoqlashtiring — kattalashadi, buring — aylanadi';
+  else if (acts.includes('grab')) t = '✋ Ko‘chiryapsiz — qo‘yib yuborsangiz qotadi, 🗑 ga tashlasangiz o‘chadi. Ikkinchi qo‘l bilan chimdib — kattalashtirish';
+  else if (acts.includes('draw')) t = '✍️ Chizyapsiz — barmoqlarni ochsangiz shaklga aylanadi';
+  else if (acts.includes('create') || acts.includes('create2')) t = '📐 Cho‘zing — ikkinchi qo‘l bilan ham chimdib cho‘zish mumkin';
+  else if (camOn && !ptrs[0].present && !ptrs[1].present) t = '👋 Qo‘lingizni kameraga ko‘rsating';
+  else { const m = TOOLS.find(x => x[0] === S.tool); t = `${m[1]} ${m[2]} · bo‘sh joyda 🤏 chimdib chizing · shaklni 🤏 ushlang · chetdagi tugmaga 👉 olib boring`; }
+  if (t !== statusTxt) { statusTxt = t; $('#status').textContent = t; }
+}
+
+/* trash zone */
+const trashEl = $('#trash'); let trashHot = false;
+function updateTrash() {
+  const p = ptrs.find(q => q.act === 'grab' && q.obj), show = !!p;
+  trashEl.classList.toggle('show', show); trashHot = false;
+  if (show) { toScreen(p.obj.pos, scr); const r = trashEl.getBoundingClientRect(); trashHot = Math.hypot(scr.x - (r.left + r.width / 2), scr.y - (r.top + r.height / 2)) < 90; }
+  trashEl.classList.toggle('hot', trashHot);
+}
+
+function updateObjects(dt, time) {
+  for (const o of OBJ) {
+    if (o.state === 'float' && !o.holder) {
+      o.pos.addScaledVector(o.vel, dt); const r = Math.max(o.sx, o.sy) * 0.8, bx = halfW - r, by = halfH - r;
+      if (o.pos.x > bx) { o.pos.x = bx; o.vel.x = -Math.abs(o.vel.x); } if (o.pos.x < -bx) { o.pos.x = -bx; o.vel.x = Math.abs(o.vel.x); }
+      if (o.pos.y > by) { o.pos.y = by; o.vel.y = -Math.abs(o.vel.y); } if (o.pos.y < -by) { o.pos.y = -by; o.vel.y = Math.abs(o.vel.y); }
+      const sp = Math.hypot(o.vel.x, o.vel.y); if (sp > 2) o.vel.multiplyScalar(Math.exp(-dt * 0.5)); else if (sp < 0.6 && sp > 1e-3) o.vel.multiplyScalar(0.6 / sp);
+    }
+    if (o.spin) o.spinA += dt * 0.9;
+    if (o.dirty) fillGeo(o);
+    o.flash *= Math.exp(-dt * 4);
+    o.pts.position.copy(o.pos);
+    o.pts.rotation.set(o.d3 ? 0.35 : 0, o.spinA, o.rot);
+    o.pts.scale.setScalar(1 + o.flash * 0.12 + (o.holder ? 0.04 : 0));
+    if (o !== S.sel) o.pts.material = (ptrs.some(p => p.hovObj === o) ? hovMat : objMat);
+  }
+  selMat.uniforms.uBoost.value = 1.3 + Math.sin(time * 5) * 0.15;
+}
+
+/* ================= Guided practice ================= */
+const TUT = [['hand', '✋ Qo‘lingizni kameraga ko‘rsating'], ['pinch', '🤏 Bosh va ko‘rsatkich barmoqni jipslang — doiracha yashil bo‘ladi'], ['draw', '✍️ Chimdib turib havoda aylana chizing, so‘ng barmoqlarni oching'], ['move', '🤏 Shaklni chimdib ushlang va boshqa joyga olib borib qo‘ying'], ['scale', '🤏🤏 Bir qo‘l ushlab tursin, ikkinchisi chimdib uzoqlashsin — kattalashadi'], ['action', '👉 O‘ngdagi 🧊 3D tugmasiga barmoqni olib boring va chimding']];
+const tutDone = new Set();
+function showTut(force) { if (!force && LS.get('tut', false)) return; tutDone.clear(); renderTut(); $('#tut').classList.add('show'); }
+function hideTut() { $('#tut').classList.remove('show'); LS.set('tut', true); }
+function tut(k) { if (!$('#tut').classList.contains('show') || tutDone.has(k)) return; tutDone.add(k); renderTut(); }
+function renderTut() {
+  const cur = TUT.findIndex(s => !tutDone.has(s[0]));
+  $('#tutS').innerHTML = TUT.map((s, i) => { const d = tutDone.has(s[0]); return `<div class="step ${d ? 'done' : i === cur ? 'cur' : ''}"><div class="ck">${d ? '✓' : i + 1}</div>${s[1]}</div>`; }).join('');
+  const fin = cur === -1; $('#tut .fin').style.display = fin ? 'block' : 'none';
+  if (fin) { LS.set('tut', true); setTimeout(hideTut, 3000); }
+}
+$('#tutX').onclick = hideTut;
+
+/* ================= Hints ================= */
+const lightCv = document.createElement('canvas'); lightCv.width = 32; lightCv.height = 18;
+const lightCx = lightCv.getContext('2d', { willReadFrequently: true });
+const hintT = {}; let hintTO, nextEnv = 0, camStartT = 0, lastHandT = 0;
+function hint(key, msg, every = 25000) {
+  const now = performance.now(); if (hintT[key] && now - hintT[key] < every) return; hintT[key] = now;
+  const h = $('#hint'); h.textContent = msg; h.classList.add('show'); clearTimeout(hintTO); hintTO = setTimeout(() => h.classList.remove('show'), 3400);
+}
+function envCheck(now) {
+  if (slots.some(s => s.present)) lastHandT = now;
+  if (!camOn || now < nextEnv || video.readyState < 2) return; nextEnv = now + 1000;
+  try {
+    lightCx.drawImage(video, 0, 0, 32, 18); const d = lightCx.getImageData(0, 0, 32, 18).data; let s = 0;
+    for (let i = 0; i < d.length; i += 4) s += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+    if (s / (d.length / 4) / 255 < 0.17) hint('dark', '💡 Xona qorong‘i — yorug‘roq joyga o‘ting, qo‘llar yaxshiroq taniladi');
+  } catch (e) { }
+  if (slots.some(s => s.present && s.hs > 0.62)) hint('close', '✋ Qo‘lingiz juda yaqin — biroz uzoqlashtiring', 15000);
+  if (now - lastHandT > 7000 && now - camStartT > 7000) hint('nohand', '👋 Qo‘lingizni kamera oldida ko‘rsating', 30000);
+}
+
+/* ================= Toast ================= */
+let toastTO;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTO); toastTO = setTimeout(() => t.classList.remove('show'), 2300); }
+
+/* ================= Recording / snapshot ================= */
+const rc = document.createElement('canvas'), rcx = rc.getContext('2d');
+function composite() {
+  const w = canvas.width, h = canvas.height; if (rc.width !== w || rc.height !== h) { rc.width = w; rc.height = h; }
+  rcx.globalCompositeOperation = 'source-over'; rcx.fillStyle = '#000'; rcx.fillRect(0, 0, w, h);
+  if (S.ar && video.videoWidth) {
+    const vw = video.videoWidth, vh = video.videoHeight, s = Math.max(w / vw, h / vh), dw = vw * s, dh = vh * s;
+    rcx.save(); rcx.filter = `brightness(${S.vb}) saturate(1.1)`; rcx.translate(w, 0); rcx.scale(-1, 1); rcx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh); rcx.restore();
+    rcx.globalCompositeOperation = 'screen';
+  }
+  rcx.drawImage(canvas, 0, 0, w, h); rcx.globalCompositeOperation = 'source-over';
+}
+let rec = null, chunks = [], snap = false;
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }
+function toggleRec() {
+  if (rec) { rec.stop(); return; }
+  if (!window.MediaRecorder) { toast('Bu brauzer video yozishni qo‘llamaydi'); return; }
+  composite(); const stream = rc.captureStream(60);
+  const mime = ['video/mp4;codecs=avc1', 'video/webm;codecs=vp9', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || '';
+  rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 12e6 }); chunks = [];
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = () => { download(new Blob(chunks, { type: mime || 'video/webm' }), `qol-studiya-${Date.now()}.${mime.includes('mp4') ? 'mp4' : 'webm'}`); rec = null; $('#tRec').classList.remove('on'); $('#recDot').style.display = 'none'; toast('🎬 Video saqlandi'); };
+  rec.start(250); $('#tRec').classList.add('on'); $('#recDot').style.display = 'block';
+}
+
+/* ================= Main loop ================= */
+let last = performance.now(), time = 0, loopErr = false;
+function frame(now) {
+  const dt = Math.min(Math.max(0, (now - last) / 1000), 1 / 30); last = now; time += dt;
+  detect(now); envCheck(now); readPtrs(now); processPtrs(now, dt);
+  updateObjects(dt, time); updateTrash(); updateSparks(dt);
+  drawSkeleton(); drawTrails(); drawCursors(); updateStatus();
+  for (const m of [objMat, selMat, hovMat, prevMat]) m.uniforms.uSize.value = (m === selMat ? 0.12 : 0.1) * S.size;
+  bloom.strength = S.bloom * 0.9;
+  stars.rotation.y += dt * 0.01;
+  composer.render();
+  if (rec || snap) composite();
+  if (snap) { snap = false; rc.toBlob(b => { download(b, `qol-studiya-${Date.now()}.png`); toast('📸 Rasm saqlandi'); }); }
+}
+function loop(now) { requestAnimationFrame(loop); try { frame(now); } catch (e) { if (!loopErr) { loopErr = true; console.error(e); toast('⚠️ ' + e.message); } } }
+
+/* ================= Settings panel ================= */
+const bindRange = (id, out, key, fmt, cb) => { const r = $(id); r.oninput = () => { S[key] = +r.value; $(out).textContent = fmt(+r.value); cb && cb(); }; };
+bindRange('#rVb', '#vVb', 'vb', v => v.toFixed(2), () => video.style.setProperty('--vb', S.vb));
+bindRange('#rBloom', '#vBloom', 'bloom', v => v.toFixed(2));
+bindRange('#rSize', '#vSize', 'size', v => v.toFixed(2));
+$('#rDw').oninput = e => { S.dwell = +e.target.value * 1000; $('#vDw').textContent = (+e.target.value).toFixed(2) + ' s'; };
+$('#setBtn').onclick = () => $('#panel').classList.toggle('hide');
+$('#tAR').onclick = () => { if (!camOn) { toast('📷 Avval kamerani yoqing'); return; } setAR(!S.ar); };
+$('#tSkel').onclick = () => { S.skel = !S.skel; $('#tSkel').classList.toggle('on', S.skel); };
+$('#tRec').onclick = toggleRec;
+$('#tSnap').onclick = () => { snap = true; };
+$('#tTutReset').onclick = () => { $('#panel').classList.add('hide'); showTut(true); };
+$('#camSel').onchange = async e => { try { await openCamera(e.target.value); toast('📷 Kamera almashtirildi'); } catch (err) { toast('Bu kamerani ochib bo‘lmadi'); } };
+
+/* mouse = one more hand (for testing / no camera) */
+const setMouse = e => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.t = performance.now(); mouse.over = true; };
+canvas.addEventListener('pointermove', setMouse);
+canvas.addEventListener('pointerdown', e => { setMouse(e); mouse.down = true; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointerup', e => { setMouse(e); mouse.down = false; });
+canvas.addEventListener('pointercancel', () => { mouse.down = false; });
+canvas.addEventListener('pointerleave', () => { if (!mouse.down) mouse.over = false; });
+let wheelT = 0;
+canvas.addEventListener('wheel', e => {
+  e.preventDefault(); const o = S.sel; if (!o) return;
+  const now = performance.now(); if (now - wheelT > 700) pushUndo(); wheelT = now;
+  const k = Math.exp(-e.deltaY * 0.0012); o.sx = clamp(o.sx * k, 0.08, 9); o.sy = clamp(o.sy * k, 0.05, 9); o.dirty = true;
+}, { passive: false });
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); undo(); }
+  else if (k === 'delete' || k === 'backspace') ACTIONS.del();
+});
+
+/* ================= Persistence ================= */
+function saveAll() {
+  LS.set('scene', OBJ.map(ser));
+  LS.set('settings', { tool: S.tool, color: S.color, vb: S.vb, bloom: S.bloom, size: S.size, skel: S.skel, dwell: S.dwell });
+}
+setInterval(saveAll, 1500); addEventListener('pagehide', saveAll);
+function loadAll() {
+  const s = LS.get('settings', null);
+  if (s) {
+    if (TOOLS.some(t => t[0] === s.tool)) S.tool = s.tool;
+    if (COLORS[s.color]) S.color = s.color;
+    for (const [id, key, div] of [['#rVb', 'vb', 1], ['#rBloom', 'bloom', 1], ['#rSize', 'size', 1], ['#rDw', 'dwell', 1000]])
+      if (typeof s[key] === 'number') { const r = $(id); r.value = s[key] / div; r.dispatchEvent(new Event('input')); }
+    if (typeof s.skel === 'boolean') { S.skel = s.skel; $('#tSkel').classList.toggle('on', S.skel); }
+  }
+  restore(LS.get('scene', []));
+}
+
+/* ================= Boot ================= */
+loadAll();
+document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === S.tool));
+updateActionUI();
+requestAnimationFrame(loop);
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+function begin() { $('#start').classList.add('out'); setTimeout(() => $('#start').style.display = 'none', 700); cacheUI(); }
+$('#goCam').onclick = async () => {
+  $('#goCam').disabled = $('#goMouse').disabled = true;
+  const ok = await startCamera(); begin();
+  if (ok) { camStartT = performance.now(); showTut(false); }
+};
+$('#goMouse').onclick = () => { begin(); toast('🖱 Bosib sudrang — chiziladi. Shaklni sudrab ko‘chiring, g‘ildirak — o‘lcham'); };
+window.__qs = { S, OBJ, ptrs, slots, recognize, ACTIONS, mouse };
+</script>
+</body>
+</html>

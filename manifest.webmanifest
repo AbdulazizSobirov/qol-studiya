@@ -1,0 +1,14 @@
+{
+  "name": "Qo‘l Sehri",
+  "short_name": "Qo‘l Sehri",
+  "description": "Kamera orqali qo‘l harakati bilan 3D zarracha shakllar, portlashlar va chizish",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#04050a",
+  "theme_color": "#04050a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

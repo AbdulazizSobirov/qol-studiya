@@ -1,0 +1,1648 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Qo‘l Sehri</title>
+<meta name="theme-color" content="#04050a">
+<meta name="description" content="Kamera orqali qo‘l harakati bilan 3D zarracha shakllar, portlashlar va chizish">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04050a;--glass:rgba(14,16,28,.58);--line:rgba(255,255,255,.09);--txt:#e9ecff;--mut:#959bc2;--acc:#8b7bff;--acc2:#00d4ff}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.glass{background:var(--glass);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid var(--line);border-radius:18px}
+button{font-family:inherit}
+.btn{background:rgba(255,255,255,.05);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:9px 12px;cursor:pointer;font:500 13px Inter,sans-serif;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.btn:hover{background:rgba(255,255,255,.1)}
+.btn.on{border-color:var(--acc);background:rgba(139,123,255,.2);box-shadow:0 0 18px rgba(139,123,255,.35)}
+.btn.pri{background:linear-gradient(135deg,#7b5cff,#00b8ff);border:0;color:#fff;font-weight:600}
+.btn.big{padding:14px 22px;font-size:15px;border-radius:14px}
+.btn.rec.on{border-color:#ff3b5c;background:rgba(255,59,92,.22);box-shadow:0 0 18px rgba(255,59,92,.45)}
+#hud{position:fixed;top:16px;left:16px;padding:10px 16px;display:flex;gap:16px;align-items:center;z-index:3;max-width:calc(100% - 90px)}
+.logo{font-family:Unbounded,sans-serif;font-weight:700;font-size:17px;background:linear-gradient(90deg,#b3a8ff,#00d4ff,#ff6ad5);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+#gest{display:flex;align-items:center;gap:10px;min-width:0}
+#gestE{font-size:28px;line-height:1;transition:transform .25s}
+#gestE.pop{transform:scale(1.35)}
+#gestE{border-radius:50%;padding:5px;background:conic-gradient(#8b7bff calc(var(--p,0)*1turn),rgba(255,255,255,.06) 0)}
+#tut{position:fixed;left:50%;bottom:76px;transform:translate(-50%,20px);width:min(460px,calc(100% - 32px));padding:16px 18px;z-index:7;opacity:0;pointer-events:none;transition:.35s}
+#tut.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#tut h4{font-family:Unbounded,sans-serif;font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+#tut h4 button{background:none;border:0;color:var(--mut);font-size:18px;cursor:pointer}
+.step{display:flex;gap:10px;align-items:center;padding:6px 0;color:var(--mut);font-size:13.5px;transition:.3s}
+.step .ck{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2);display:grid;place-items:center;font-size:12px;font-weight:700}
+.step.cur{color:var(--txt)} .step.cur .ck{border-color:var(--acc);box-shadow:0 0 10px rgba(139,123,255,.6)}
+.step.done{color:#5dff9b} .step.done .ck{background:#5dff9b;color:#04050a;border-color:#5dff9b}
+#tut .fin{font-weight:600;color:#5dff9b;margin-top:6px;display:none}
+#trash{position:fixed;right:28px;bottom:28px;width:96px;height:96px;border-radius:50%;display:grid;place-items:center;font-size:38px;z-index:3;opacity:0;transform:scale(.6);transition:.25s;pointer-events:none;border:2px dashed rgba(255,80,100,.6);background:rgba(255,40,70,.12)}
+#trash.show{opacity:1;transform:scale(1)} #trash.hot{transform:scale(1.25);background:rgba(255,40,70,.45);border-color:#ff3b5c;border-style:solid}
+#hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);padding:14px 20px;font-weight:600;font-size:15px;z-index:8;opacity:0;pointer-events:none;transition:.4s;text-align:center;max-width:calc(100% - 32px)}
+#hint.show{opacity:1}
+#gestT{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#fps{font-size:11px;color:var(--mut)}
+#charge{position:absolute;left:12px;right:12px;bottom:4px;height:3px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;opacity:0;transition:opacity .2s}
+#charge i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd000,#ff3d00,#ff00c8)}
+#panelBtn{position:fixed;top:16px;right:16px;z-index:6;width:46px;height:46px;font-size:18px;padding:0}
+#panel{position:fixed;top:72px;right:16px;bottom:16px;width:330px;padding:6px 16px 16px;overflow-y:auto;z-index:5;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+#panel.hide{transform:translateX(calc(100% + 24px))}
+#panel::-webkit-scrollbar{width:6px}#panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:6px}
+#panel h3{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:16px 0 8px;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sbtn{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:8px 2px 7px;cursor:pointer;font:500 10.5px Inter,sans-serif;display:flex;flex-direction:column;align-items:center;gap:3px;transition:.2s}
+.sbtn span{font-size:21px;line-height:1.1}
+.sbtn:hover{background:rgba(255,255,255,.09);transform:translateY(-1px)}
+.sbtn.on{border-color:var(--acc);background:rgba(139,123,255,.2);box-shadow:0 0 16px rgba(139,123,255,.4)}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.row.nw{flex-wrap:nowrap}
+input[type=text]{flex:1;min-width:0;background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--txt);border-radius:12px;padding:10px 12px;font:14px Inter,sans-serif;outline:none}
+input[type=text]:focus{border-color:var(--acc)}
+select{background:rgba(0,0,0,.35);border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:7px 8px;font:12px Inter,sans-serif;outline:none}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{font-size:12px;padding:5px 9px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--line);cursor:pointer;transition:.2s;color:var(--txt)}
+.chip:hover{background:rgba(139,123,255,.2)}
+.sw{width:32px;height:32px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.2s}
+.sw.on{border-color:#fff;transform:scale(1.1)}
+.rng{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-top:10px;margin-bottom:2px}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.file{position:relative;overflow:hidden}
+.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.small{font-size:11.5px;color:var(--mut);line-height:1.5}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.g2 .btn{width:100%}
+#video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);z-index:0;display:none;filter:brightness(var(--vb,.7)) saturate(1.15) contrast(1.05)}
+#gl{z-index:1}
+body.ar #video{display:block}
+body.ar #gl{mix-blend-mode:screen}
+#legend{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;gap:4px;padding:7px;flex-wrap:wrap;justify-content:center;max-width:min(820px,calc(100% - 620px));z-index:2}
+.lg{font-size:11.5px;padding:5px 9px;border-radius:10px;background:rgba(255,255,255,.04);white-space:nowrap;color:#cfd3f5}
+.lg b{font-size:14px;margin-right:3px}
+#modes{position:fixed;top:16px;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:5px;z-index:4}
+.mbtn{background:transparent;border:0;color:var(--mut);border-radius:13px;padding:9px 16px;cursor:pointer;font:600 13.5px Inter,sans-serif;display:flex;align-items:center;gap:7px;transition:.2s;white-space:nowrap}
+.mbtn span{font-size:18px}
+.mbtn:hover{color:var(--txt);background:rgba(255,255,255,.06)}
+.mbtn.on{color:#fff;background:linear-gradient(135deg,rgba(123,92,255,.55),rgba(0,184,255,.45));box-shadow:0 0 20px rgba(123,92,255,.45)}
+@media (max-width:1180px){#modes{top:76px}#toast{top:136px !important}}
+@media (max-width:700px){#modes{top:62px;left:8px;right:8px;transform:none;justify-content:space-between}.mbtn{padding:8px 8px;font-size:11.5px;gap:4px}.mbtn span{font-size:16px}}
+#toast{position:fixed;top:84px;left:50%;transform:translate(-50%,-14px);opacity:0;transition:.3s;padding:10px 18px;font-weight:600;font-size:14px;pointer-events:none;z-index:9;white-space:nowrap}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#recDot{position:fixed;top:24px;left:50%;transform:translateX(-50%);color:#ff3b5c;font:700 12px Inter;letter-spacing:.12em;display:none;z-index:9;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.3}}
+#start{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at center,rgba(4,5,10,.35),rgba(4,5,10,.85));z-index:20;padding:16px;transition:opacity .6s}
+#start.out{opacity:0;pointer-events:none}
+.card{max-width:560px;text-align:center;padding:36px 28px}
+.badge{display:inline-block;font-size:12px;padding:6px 12px;border-radius:99px;border:1px solid var(--line);color:#cfd3f5;margin-bottom:18px}
+h1{font-family:Unbounded,sans-serif;font-size:clamp(34px,8vw,60px);line-height:1.05;background:linear-gradient(90deg,#c3b9ff,#00d4ff 50%,#ff6ad5);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:14px}
+.card p{color:#c3c7e6;line-height:1.6;margin-bottom:24px}
+.card .row{justify-content:center}
+#startStatus{margin:18px 0 0;font-size:12.5px;color:var(--mut)}
+@media (max-width:1100px){#legend{display:none}}
+@media (max-width:700px){
+  #hud{left:8px;top:8px;padding:8px 12px;gap:10px}
+  .logo{display:none}
+  #panelBtn{top:8px;right:8px}
+  #panel{top:auto;left:8px;right:8px;bottom:8px;width:auto;max-height:58vh}
+  #panel.hide{transform:translateY(calc(100% + 20px))}
+  #cam{width:110px;left:8px;bottom:auto;top:70px}
+  #toast{top:70px;white-space:normal;max-width:calc(100% - 32px);text-align:center}
+}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<video id="video" playsinline muted></video>
+<canvas id="gl"></canvas>
+
+<div id="start">
+  <div class="card glass">
+    <div class="badge">✨ Kamera · Sun’iy intellekt · 3D zarrachalar</div>
+    <h1>Qo‘l Sehri</h1>
+    <p>Qo‘lingiz harakati bilan o‘n minglab nur zarrachasini boshqaring: shakl yasang, zaryad yig‘ib portlating, havoda chizing, yuzingizdan niqob yasang.</p>
+    <div class="row">
+      <button class="btn big pri" id="goCam">📷 Kamera bilan boshlash</button>
+      <button class="btn big" id="goMouse">🖱 Kamerasiz sinash</button>
+    </div>
+    <div id="startStatus">Video hech qayerga yuborilmaydi — hammasi kompyuteringizning o‘zida ishlaydi.</div>
+  </div>
+</div>
+
+<div id="hud" class="glass">
+  <div class="logo">Qo‘l Sehri</div>
+  <div id="gest"><div id="gestE">👋</div><div style="min-width:0"><div id="gestT">Boshlash tugmasini bosing</div><div id="fps">— fps</div></div></div>
+  <div id="charge"><i></i></div>
+</div>
+
+<button id="panelBtn" class="btn glass" title="Sozlamalar (H)">☰</button>
+<div id="modes" class="glass">
+  <button class="mbtn" data-m="magic" title="M"><span>✨</span>Sehr</button>
+  <button class="mbtn" data-m="build" title="B"><span>🔷</span>Qurish</button>
+  <button class="mbtn" data-m="draw" title="D"><span>✍️</span>Chizish</button>
+  <button class="mbtn" data-m="face" title="F"><span>🎭</span>Yuz</button>
+  <button class="mbtn" id="tutBtn" title="Mashq"><span>🎓</span></button>
+</div>
+<div id="tut" class="glass"><h4><span id="tutT">Mashq</span><button id="tutX" title="Yopish">✕</button></h4><div id="tutS"></div><div class="fin">🎉 Zo‘r! Siz tayyorsiz</div></div>
+<div id="trash">🗑</div>
+<div id="hint" class="glass"></div>
+
+<aside id="panel" class="glass hide">
+  <h3>Shakllar</h3>
+  <div class="grid" id="shapes"></div>
+
+  <h3>Ob‘ektlar — 🔷 Qurish rejimida ishlaydi</h3>
+  <div class="small" style="margin-bottom:8px">Ikki qo‘lni 🤏🤏 chimdib cho‘zing — shakl chiziladi. Shu turdagi shakl chiziladi:</div>
+  <div class="grid" id="okinds" style="grid-template-columns:repeat(5,1fr)"></div>
+  <div class="g2" style="margin-top:6px">
+    <button class="btn" id="oCube">➕ Kub</button>
+    <button class="btn" id="oOrb">➕ Shar</button>
+    <button class="btn" id="oFloat">🌊 Hammasi suzsin</button>
+    <button class="btn" id="oPin">📌 Hammasini qotir</button>
+    <button class="btn" id="oClear">🧹 Ob‘ektlarni o‘chir</button>
+    <button class="btn on" id="oMain">🌌 Asosiy shakl</button>
+    <button class="btn" id="oUndo" style="grid-column:span 2">↩️ Bekor qilish (Ctrl+Z)</button>
+  </div>
+  <div class="small" style="margin-top:8px">
+    🤏 Ob‘ektga yaqin chimdib ushlang → olib boring → sekin qo‘yib yuboring = <b>qotadi</b>.<br>
+    🤏💨 Tez otib yuborsangiz — ekranda <b>suzib yuradi</b>.<br>
+    🤏 + 🤏 Bir qo‘l ushlab turib, ikkinchisi bilan chimdib — <b>kattalashtirish / kichraytirish</b>.<br>
+    🖱 Sichqoncha: ob‘ektni sudrab ko‘chirish, bo‘sh joyda sudrash — shakl chizish.
+  </div>
+
+  <h3>Istalgan narsa yarating</h3>
+  <div class="row nw">
+    <input type="text" id="cmd" placeholder="ajdar, raketa, ismingiz, 🦄…">
+    <button class="btn pri" id="cmdGo">Yarat</button>
+    <button class="btn" id="voiceBtn" title="Ovoz bilan aytish">🎤</button>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <span class="small">Ovoz tili:</span>
+    <select id="vlang"><option value="uz-UZ">O‘zbekcha</option><option value="ru-RU">Русский</option><option value="en-US">English</option></select>
+  </div>
+  <div class="chips" id="quick"></div>
+  <div class="row" style="margin-top:8px">
+    <label class="btn file" style="width:100%">🖼 Rasm yuklash — zarrachalardan yig‘iladi<input type="file" id="imgIn" accept="image/*"></label>
+  </div>
+
+  <h3>Rang</h3>
+  <div class="row" id="themes"></div>
+
+  <h3>Rejimlar</h3>
+  <div class="g2">
+    <button class="btn" id="tDraw">✍️ Havoda chizish</button>
+    <button class="btn" id="tForm">✨ Chizmani shaklga</button>
+    <button class="btn" id="tClear">🧹 Chizmani o‘chirish</button>
+    <button class="btn" id="tForce">💨 Kuch: itarish</button>
+    <button class="btn on" id="tAuto">🔄 Avto-aylanish</button>
+    <button class="btn on" id="tSkel">🖐 Qo‘l skeleti</button>
+    <button class="btn" id="tBoom">💥 Portlatish</button>
+    <button class="btn on" id="tAR">📷 Kamera fonda</button>
+    <button class="btn on" id="tSpark">✨ Barmoq uchqunlari</button>
+    <button class="btn on" id="tBolt">⚡ Chaqmoqlar</button>
+  </div>
+  <div class="row nw" id="camRow" style="display:none;margin-top:10px"><span class="small">Kamera:</span><select id="camSel" style="flex:1;min-width:0"></select></div>
+  <div class="rng"><span>Kamera yorqinligi</span><span id="vVb">0.7</span></div>
+  <input type="range" id="rVb" min="0.1" max="1.2" step="0.05" value="0.7">
+
+  <h3>Musiqa va ovoz</h3>
+  <div class="g2">
+    <button class="btn" id="tMic">🎙 Mikrofon</button>
+    <label class="btn file">🎵 Musiqa fayli<input type="file" id="musicIn" accept="audio/*"></label>
+  </div>
+  <div class="rng"><span>Musiqaga sezgirlik</span><span id="vAud">1.0</span></div>
+  <input type="range" id="rAud" min="0" max="3" step="0.1" value="1">
+
+  <h3>Effektlar</h3>
+  <div class="rng"><span>Zarrachalar soni</span></div>
+  <select id="qual" style="width:100%">
+    <option value="auto">Avto — kompyuterga moslashadi</option>
+    <option value="30000">Yengil — 30 000</option>
+    <option value="70000">O‘rta — 70 000</option>
+    <option value="120000">Kuchli — 120 000</option>
+    <option value="200000">Ultra — 200 000</option>
+  </select>
+  <div class="rng"><span>Zarracha o‘lchami</span><span id="vSize">1.0</span></div>
+  <input type="range" id="rSize" min="0.4" max="2.5" step="0.05" value="1">
+  <div class="rng"><span>Nur kuchi</span><span id="vBloom">1.0</span></div>
+  <input type="range" id="rBloom" min="0" max="2.5" step="0.05" value="1">
+  <div class="rng"><span>Tebranish</span><span id="vTurb">1.0</span></div>
+  <input type="range" id="rTurb" min="0" max="4" step="0.1" value="1">
+
+  <h3>Saqlash</h3>
+  <div class="g2">
+    <button class="btn rec" id="tRec">⏺ Video yozish</button>
+    <button class="btn" id="tSnap">📸 Rasm olish</button>
+  </div>
+
+  <h3>Ishoralar</h3>
+  <div class="small">
+    ☝️ <b>Ko‘rsatkich barmoq</b> — zarrachalarni itaradi / chizadi<br>
+    ✌️ <b>Ikki barmoq</b> — keyingi shakl<br>
+    🤟 <b>Uch barmoq</b> — rangni almashtirish<br>
+    ✊ <b>Musht</b> — zaryad yig‘ish, so‘ng 🖐 kaftni ochsangiz — PORTLASH<br>
+    🖐 <b>Ochiq kaft</b> — shakl kaftingizda suzadi, qo‘lni bursangiz aylanadi<br>
+    👆 <b>Bosh + ko‘rsatkich (L shakl)</b> — kattalashtirish, orasida chaqmoq<br>
+    🙌 <b>Ikki qo‘l</b> — orasida energiya shari va chaqmoqlar<br>
+    ✨ Barmoq uchlaridan doim uchqun chiqadi, ☝️ esa sehrli tayoqcha<br>
+    🤘 <b>Ko‘rsatkich + jimjiloq</b> — kuch turi (itarish / girdob)<br><br>
+    ⌨️ 1–0 shakllar · Bo‘sh joy portlash · C rang · D chizish · F yuz · R yozish · H panel<br>
+    🖱 Sichqoncha: harakat — itarish, bosib turish — zaryad, g‘ildirak — masshtab
+  </div>
+</aside>
+
+
+<div id="legend" class="glass">
+  <div class="lg"><b>☝️</b>itarish</div><div class="lg"><b>✌️</b>keyingi shakl</div><div class="lg"><b>🤟</b>rang</div>
+  <div class="lg"><b>✊→🖐</b>portlash</div><div class="lg"><b>🖐</b>aylantirish</div><div class="lg"><b>👆</b>L — masshtab</div>
+  <div class="lg"><b>🙌</b>cho‘zish</div><div class="lg"><b>🤘</b>kuch turi</div>
+</div>
+<div id="toast" class="glass"></div>
+<div id="recDot">● REC</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+const MP_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs';
+const MP_WASM = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm';
+const GEST_MODEL = 'https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task';
+const HAND_MODEL ='https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+const FACE_MODEL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task';
+
+THREE.ColorManagement.enabled = false;
+const $ = s => document.querySelector(s);
+const TAU = Math.PI * 2, R = Math.random;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const gs = () => (R() + R() + R() + R() - 2) * 0.866; // ~N(0, .5)
+const isMobile = matchMedia('(max-width:700px)').matches || 'ontouchstart' in window;
+
+/* ---------------- Renderer ---------------- */
+const canvas = $('#gl');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+const PR = Math.min(devicePixelRatio || 1, isMobile ? 1.5 : 1.75);
+renderer.setPixelRatio(PR);
+renderer.setSize(innerWidth, innerHeight);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x04050a);
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(0, 0, 9);
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 1.0, 0.55, 0.0);
+composer.addPass(bloom);
+let halfH, halfW;
+function computeView() { halfH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.position.z; halfW = halfH * camera.aspect; }
+computeView();
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight); composer.setSize(innerWidth, innerHeight);
+  bloom.resolution.set(innerWidth, innerHeight); computeView(); if (typeof computeCover === 'function') computeCover();
+});
+
+function glowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.6)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+const glowTex = glowTexture();
+
+/* ---------------- Background stars ---------------- */
+{
+  const n = 2200, p = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const u = R() * 2 - 1, th = R() * TAU, r = 25 + R() * 40, s = Math.sqrt(1 - u * u);
+    p[i * 3] = Math.cos(th) * s * r; p[i * 3 + 1] = u * r; p[i * 3 + 2] = Math.sin(th) * s * r - 10;
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p, 3));
+  var stars = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.22, map: glowTex, color: 0x8a94ff, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+  scene.add(stars);
+}
+
+/* ---------------- Particles ---------------- */
+const pMat = new THREE.ShaderMaterial({
+  uniforms: { uSize: { value: 0.085 }, uPR: { value: PR }, uAudio: { value: 0 }, uAlpha: { value: 0.75 }, uCharge: { value: 0 } },
+  vertexShader: `attribute float aSize; attribute vec3 aColor; uniform float uSize,uPR,uAudio,uCharge; varying vec3 vC;
+    void main(){ vec4 mv=modelViewMatrix*vec4(position,1.0); gl_Position=projectionMatrix*mv;
+      gl_PointSize=max(1.0,uSize*aSize*uPR*(1.0+uAudio*1.4+uCharge*0.9)*(300.0/-mv.z));
+      vC=aColor*(1.0+uCharge*0.9+uAudio*0.5); }`,
+  fragmentShader: `uniform float uAlpha; varying vec3 vC;
+    void main(){ float d=length(gl_PointCoord-0.5); if(d>0.5) discard; float a=pow(1.0-d*2.0,1.6); gl_FragColor=vec4(vC,a*uAlpha); }`,
+  transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+});
+const group = new THREE.Group(); scene.add(group);
+let N = 0, pos, vel, tgt, col, colT, stiff, geo, points, faceE, faceT;
+let colorLerp = 0, ownColor = false;
+
+const S = {
+  scale: 1, scaleT: 1, rx: 0, ry: 0, rz: 0, rxT: 0, ryT: 0, rzT: 0,
+  auto: true, theme: 0, forceMode: 0, draw: false, face: false, skel: true,
+  springMul: 1, gather: 0, gatherT: 0, charge: 0, shake: 0, kick: 0,
+  size: 1, bloom: 1, turb: 1, audioGain: 1, cur: 'galaxy', regen: null, two: null,
+  ar: false, user: 1, baseScale: 1, anchor: new THREE.Vector3(), anchorT: new THREE.Vector3(), sparks: true, bolts: true, vb: 0.7
+};
+
+function build(n) {
+  N = n;
+  pos = new Float32Array(n * 3); vel = new Float32Array(n * 3); tgt = new Float32Array(n * 3);
+  col = new Float32Array(n * 3); colT = new Float32Array(n * 3); stiff = new Float32Array(n);
+  faceE = new Uint16Array(n); faceT = new Float32Array(n);
+  const size = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    stiff[i] = 0.5 + R() * 1.0; size[i] = 0.45 + Math.pow(R(), 3) * 1.7;
+    const u = R() * 2 - 1, th = R() * TAU, s = Math.sqrt(1 - u * u), r = 14 + R() * 10;
+    pos[i * 3] = Math.cos(th) * s * r; pos[i * 3 + 1] = u * r; pos[i * 3 + 2] = Math.sin(th) * s * r;
+  }
+  if (points) { group.remove(points); geo.dispose(); }
+  geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+  geo.setAttribute('aColor', new THREE.BufferAttribute(col, 3).setUsage(THREE.DynamicDrawUsage));
+  geo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+  geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 100);
+  points = new THREE.Points(geo, pMat); points.frustumCulled = false; group.add(points);
+}
+
+/* ---------------- Shapes ---------------- */
+function tilt(o, n, ax, ay, az = 0) {
+  const cx = Math.cos(ax), sx = Math.sin(ax), cy = Math.cos(ay), sy = Math.sin(ay), cz = Math.cos(az), sz = Math.sin(az);
+  for (let j = 0; j < n * 3; j += 3) {
+    let x = o[j], y = o[j + 1], z = o[j + 2];
+    let x0 = x * cz - y * sz, y0 = x * sz + y * cz; x = x0; y = y0;
+    const y1 = y * cx - z * sx, z1 = y * sx + z * cx;
+    o[j] = x * cy + z1 * sy; o[j + 1] = y1; o[j + 2] = -x * sy + z1 * cy;
+  }
+}
+const SHAPES = {
+  galaxy(n, o) {
+    for (let i = 0, j = 0; i < n; i++, j += 3) {
+      if (R() < 0.16) { o[j] = gs() * 0.75; o[j + 1] = gs() * 0.4; o[j + 2] = gs() * 0.75; continue; }
+      const r = 0.3 + Math.pow(R(), 1.5) * 3.8, a = (i % 4) * TAU / 4 + r * 1.25, sc = Math.pow(R(), 2.2) * (0.3 + r * 0.14);
+      o[j] = Math.cos(a) * r + gs() * sc * 1.6; o[j + 1] = gs() * 0.1 * (1 + (4 - r) * 0.25); o[j + 2] = Math.sin(a) * r + gs() * sc * 1.6;
+    }
+    tilt(o, n, 1.05, 0);
+  },
+  sphere(n, o) {
+    const ga = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0, j = 0; i < n; i++, j += 3) {
+      const y = 1 - 2 * (i + 0.5) / n, rr = Math.sqrt(1 - y * y), th = i * ga;
+      const rad = R() < 0.82 ? 2.5 + gs() * 0.03 : 2.5 * Math.cbrt(R()) * 0.92;
+      o[j] = Math.cos(th) * rr * rad; o[j + 1] = y * rad; o[j + 2] = Math.sin(th) * rr * rad;
+    }
+  },
+  heart(n, o) {
+    for (let j = 0; j < n * 3; j += 3) {
+      const t = R() * TAU, s = Math.sqrt(R()), st = Math.sin(t);
+      const x = 16 * st * st * st, y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+      const z = (R() < 0.5 ? -1 : 1) * Math.sqrt(Math.max(0, 1 - s * s)) * 1.1;
+      o[j] = x * 0.16 * s + gs() * 0.03; o[j + 1] = y * 0.16 * s + 0.35 + gs() * 0.03; o[j + 2] = z + gs() * 0.03;
+    }
+  },
+  saturn(n, o) {
+    for (let j = 0; j < n * 3; j += 3) {
+      if (R() < 0.38) {
+        const u = R() * 2 - 1, th = R() * TAU, rr = Math.sqrt(1 - u * u), rad = 1.45 * (R() < 0.9 ? 1 : Math.cbrt(R()));
+        o[j] = Math.cos(th) * rr * rad; o[j + 1] = u * rad; o[j + 2] = Math.sin(th) * rr * rad;
+      } else {
+        let r; do { r = 2.0 + Math.pow(R(), 0.8) * 1.8; } while (r > 2.9 && r < 3.05);
+        const a = R() * TAU; o[j] = Math.cos(a) * r; o[j + 1] = gs() * 0.035; o[j + 2] = Math.sin(a) * r;
+      }
+    }
+    tilt(o, n, 0.45, 0, 0.3);
+  },
+  flower(n, o) {
+    const P = 6;
+    for (let j = 0; j < n * 3; j += 3) {
+      const q = R();
+      if (q < 0.1) { o[j] = gs() * 0.33; o[j + 1] = 0.6 + gs() * 0.33; o[j + 2] = 0.35 + gs() * 0.2; }
+      else if (q < 0.17) { const t = R(); o[j] = Math.sin(t * 3) * 0.25 + gs() * 0.04; o[j + 1] = 0.3 - t * 3.6; o[j + 2] = gs() * 0.04 - t * 0.5; }
+      else {
+        const th = R() * TAU, pr = 2.7 * Math.pow(Math.abs(Math.cos(P * th / 2)), 0.5), rad = pr * Math.pow(R(), 0.6);
+        o[j] = Math.cos(th) * rad; o[j + 1] = Math.sin(th) * rad + 0.6; o[j + 2] = rad * rad * 0.13 + gs() * 0.04;
+      }
+    }
+    tilt(o, n, -0.25, 0);
+  },
+  dna(n, o) {
+    for (let j = 0; j < n * 3; j += 3) {
+      const q = R(), y = (R() - 0.5) * 7.2, a = y * 1.5;
+      if (q < 0.8) { const ph = q < 0.4 ? 0 : Math.PI; o[j] = Math.cos(a + ph) * 1.3 + gs() * 0.06; o[j + 1] = y + gs() * 0.04; o[j + 2] = Math.sin(a + ph) * 1.3 + gs() * 0.06; }
+      else { const ys = Math.round(y / 0.3) * 0.3, as = ys * 1.5, u = R() * 2 - 1; o[j] = Math.cos(as) * 1.3 * u; o[j + 1] = ys + gs() * 0.02; o[j + 2] = Math.sin(as) * 1.3 * u; }
+    }
+    tilt(o, n, 0, 0, 0.5);
+  },
+  knot(n, o) {
+    for (let j = 0; j < n * 3; j += 3) {
+      const t = R() * TAU, r = Math.cos(3 * t) + 2.2, tr = 0.3 * Math.sqrt(R());
+      o[j] = r * Math.cos(2 * t) + gs() * tr; o[j + 1] = r * Math.sin(2 * t) + gs() * tr; o[j + 2] = -Math.sin(3 * t) * 1.2 + gs() * tr;
+    }
+  },
+  atom(n, o) {
+    for (let j = 0; j < n * 3; j += 3) {
+      const q = R();
+      if (q < 0.18) { o[j] = gs() * 0.38; o[j + 1] = gs() * 0.38; o[j + 2] = gs() * 0.38; continue; }
+      const k = (R() * 3) | 0;
+      const a = q < 0.23 ? k * 2.1 + 1 + gs() * 0.06 : R() * TAU;
+      const jit = q < 0.23 ? 0.12 : 0.04;
+      let x = Math.cos(a) * 3.1, y = Math.sin(a) * 1.05, z = 0;
+      const rz = k * Math.PI / 3, c = Math.cos(rz), s = Math.sin(rz);
+      const x2 = x * c - y * s, y2 = x * s + y * c, ax = (k - 1) * 0.5;
+      o[j] = x2 + gs() * jit; o[j + 1] = y2 * Math.cos(ax) + gs() * jit; o[j + 2] = y2 * Math.sin(ax) + gs() * jit;
+    }
+    tilt(o, n, 0.4, 0.3);
+  },
+  butterfly(n, o) {
+    for (let j = 0; j < n * 3; j += 3) {
+      const t = R() * 24 * Math.PI;
+      const r = Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.pow(Math.sin(t / 12), 5);
+      const s = 0.72 + 0.28 * Math.sqrt(R());
+      const x = Math.sin(t) * r * s * 0.78, y = Math.cos(t) * r * s * 0.78;
+      o[j] = x; o[j + 1] = y - 0.3; o[j + 2] = Math.abs(x) * 0.4 + gs() * 0.05;
+    }
+  },
+  tornado(n, o) {
+    for (let i = 0, j = 0; i < n; i++, j += 3) {
+      const h = R(), y = h * 6.4 - 3.4, r = 0.15 + Math.pow(h, 1.6) * 2.6;
+      const a = h * 22 + R() * TAU * 0.15 + (i % 3) * TAU / 3, jr = r * (0.85 + R() * 0.3);
+      o[j] = Math.cos(a) * jr; o[j + 1] = y; o[j + 2] = Math.sin(a) * jr;
+    }
+  }
+};
+const SHAPE_LIST = [['galaxy', '🌌', 'Galaktika'], ['sphere', '🔮', 'Shar'], ['heart', '❤️', 'Yurak'], ['saturn', '🪐', 'Saturn'], ['flower', '🌸', 'Gul'], ['dna', '🧬', 'DNK'], ['knot', '➰', 'Tugun'], ['atom', '⚛️', 'Atom'], ['butterfly', '🦋', 'Kapalak'], ['tornado', '🌪️', 'Tornado'], ['face', '🎭', 'Yuz niqobi']];
+
+const THEMES = [
+  { n: 'Kosmik', c: ['#5a4cff', '#00d4ff', '#ff4fd8'] }, { n: 'Olov', c: ['#ff2200', '#ff9a00', '#ffe9a8'] },
+  { n: 'Okean', c: ['#0040ff', '#00e5ff', '#d0fffb'] }, { n: 'Zumrad', c: ['#00ff95', '#a8ff00', '#00b3ff'] },
+  { n: 'Oltin', c: ['#ff6a00', '#ffd000', '#fff6d8'] }, { n: 'Sakura', c: ['#ff2d7a', '#ffb3d1', '#ffffff'] },
+  { n: 'Kamalak', rainbow: true }
+];
+function themeColors() {
+  const th = THEMES[S.theme], tmp = new THREE.Color(), cs = th.c ? th.c.map(h => new THREE.Color(h)) : null;
+  let maxR = 1e-4;
+  for (let j = 0; j < N * 3; j += 3) { const r = Math.hypot(tgt[j], tgt[j + 1], tgt[j + 2]); if (r > maxR) maxR = r; }
+  for (let j = 0; j < N * 3; j += 3) {
+    const x = tgt[j], y = tgt[j + 1], z = tgt[j + 2], r = Math.hypot(x, y, z) / maxR;
+    if (th.rainbow) tmp.setHSL(((Math.atan2(y, x) / TAU + 0.5) + r * 0.35) % 1, 0.95, 0.5 + R() * 0.12);
+    else { const t = clamp(r + (R() - 0.5) * 0.28, 0, 1); if (t < 0.5) tmp.copy(cs[0]).lerp(cs[1], t * 2); else tmp.copy(cs[1]).lerp(cs[2], (t - 0.5) * 2); }
+    if (R() < 0.03) tmp.setRGB(1, 1, 1);
+    colT[j] = tmp.r; colT[j + 1] = tmp.g; colT[j + 2] = tmp.b;
+  }
+  colorLerp = 2.5; ownColor = false;
+}
+function setTargets(o, c) {
+  tgt.set(o);
+  if (c) { colT.set(c); ownColor = true; colorLerp = 2.5; } else themeColors();
+}
+function applyGen(gen, name) {
+  const res = gen(N); if (!res) return false;
+  if (S.face && name !== 'face') stopFace();
+  S.regen = gen; S.cur = name; setTargets(res.o, res.c); markShapes(); return true;
+}
+function setShape(name, silent) {
+  if (name === 'face') { setMode(S.mode === 'face' ? 'magic' : 'face'); return; }
+  if (!SHAPES[name]) return;
+  applyGen(n => { const o = new Float32Array(n * 3); SHAPES[name](n, o); return { o }; }, name);
+  const m = SHAPE_LIST.find(s => s[0] === name);
+  if (!silent && m) toast(`${m[1]} ${m[2]}`);
+}
+function nextShape(dir = 1) {
+  const list = SHAPE_LIST.filter(s => s[0] !== 'face');
+  let i = list.findIndex(s => s[0] === S.cur);
+  i = (i + dir + list.length) % list.length;
+  setShape(list[i][0]);
+}
+function nextTheme() { S.theme = (S.theme + 1) % THEMES.length; themeColors(); markThemes(); toast(`🎨 ${THEMES[S.theme].n}`); }
+
+/* ---------------- Canvas sampling (text / emoji / image) ---------------- */
+function sampleCanvas(cv, n, worldW, useColor, depth = 0.7) {
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  const w = cv.width, h = cv.height, d = ctx.getImageData(0, 0, w, h).data, idx = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const k = (y * w + x) * 4; if (d[k + 3] < 110) continue;
+    if (useColor && (d[k] + d[k + 1] + d[k + 2]) < 40) continue;
+    idx.push(y * w + x);
+  }
+  if (idx.length < 20) return null;
+  const o = new Float32Array(n * 3), c = useColor ? new Float32Array(n * 3) : null, sc = worldW / w;
+  for (let i = 0, j = 0; i < n; i++, j += 3) {
+    const p = idx[(R() * idx.length) | 0], px = p % w, py = (p / w) | 0, k = p * 4;
+    const l = (d[k] + d[k + 1] + d[k + 2]) / 765;
+    o[j] = (px + R() - w / 2) * sc; o[j + 1] = -(py + R() - h / 2) * sc; o[j + 2] = (useColor ? (l - 0.5) * depth : 0) + gs() * 0.12;
+    if (c) { const b = 1.15; c[j] = Math.min(1, d[k] / 255 * b); c[j + 1] = Math.min(1, d[k + 1] / 255 * b); c[j + 2] = Math.min(1, d[k + 2] / 255 * b); }
+  }
+  return { o, c };
+}
+function maxWorldW() { return Math.min(halfW * 2 * 0.82, 10); }
+function textCanvas(txt) {
+  const cv = document.createElement('canvas'), g = cv.getContext('2d');
+  const font = '700 150px Unbounded, Inter, sans-serif'; g.font = font;
+  const w = Math.ceil(g.measureText(txt).width) + 40; cv.width = Math.min(w, 2400); cv.height = 210;
+  g.font = font; g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.textAlign = 'center';
+  g.fillText(txt, cv.width / 2, 110, cv.width - 20);
+  return cv;
+}
+function emojiCanvas(e) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 240;
+  const g = cv.getContext('2d');
+  g.font = '190px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(e, 120, 132);
+  return cv;
+}
+function makeText(txt) {
+  const cv = textCanvas(txt);
+  const ww = Math.min(maxWorldW(), cv.width / 210 * 2.6);
+  return applyGen(n => sampleCanvas(cv, n, ww, false), 'text');
+}
+function makeEmoji(e) { const cv = emojiCanvas(e); return applyGen(n => sampleCanvas(cv, n, Math.min(6.4, maxWorldW()), true, 1.0), 'emoji'); }
+function makeImage(file) {
+  const img = new Image();
+  img.onload = () => {
+    const m = 280, sc = m / Math.max(img.width, img.height), cv = document.createElement('canvas');
+    cv.width = Math.round(img.width * sc); cv.height = Math.round(img.height * sc);
+    cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+    const ww = Math.min(maxWorldW(), 6.8 * cv.width / Math.max(cv.width, cv.height));
+    if (applyGen(n => sampleCanvas(cv, n, ww, true, 1.2), 'image')) toast('🖼 Rasm zarrachalardan yig‘ildi');
+    else toast('Rasmni o‘qib bo‘lmadi');
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(file);
+}
+
+/* ---------------- Commands (text + voice) ---------------- */
+const SHAPE_WORDS = {
+  galaxy: ['galaktika', 'galaxy', 'галактика', 'koinot', 'kosmos', 'космос'], sphere: ['shar', 'sfera', 'sphere', 'ball', 'шар', 'сфера'],
+  heart: ['yurak', 'heart', 'sevgi', 'love', 'сердце', 'muhabbat', 'любовь'], saturn: ['saturn', 'sayyora', 'planet', 'сатурн', 'планета'],
+  flower: ['gul', 'flower', 'цветок', 'lola'], dna: ['dnk', 'dna', 'днк'], knot: ['tugun', 'knot', 'узел'], atom: ['atom', 'атом'],
+  butterfly: ['kapalak', 'butterfly', 'бабочка'], tornado: ['tornado', 'girdob', 'quyun', 'торнадо', 'vortex', 'смерч'],
+  face: ['yuz', 'niqob', 'face', 'mask', 'лицо', 'маска']
+};
+const EMOJI = {
+  ajdar: '🐉', ajdaho: '🐉', ajdarho: '🐉', ajdarxo: '🐉', dragon: '🐉', дракон: '🐉', mushuk: '🐱', cat: '🐱', кот: '🐱', кошка: '🐱',
+  it: '🐶', kuchuk: '🐶', dog: '🐶', собака: '🐶', olma: '🍎', apple: '🍎', яблоко: '🍎', yulduz: '⭐', star: '⭐', звезда: '⭐',
+  raketa: '🚀', rocket: '🚀', ракета: '🚀', baliq: '🐠', fish: '🐠', рыба: '🐠', daraxt: '🌳', tree: '🌳', дерево: '🌳',
+  quyosh: '☀️', sun: '☀️', солнце: '☀️', oy: '🌙', moon: '🌙', луна: '🌙', mashina: '🏎️', car: '🏎️', машина: '🏎️',
+  sher: '🦁', lion: '🦁', лев: '🦁', ot: '🐎', horse: '🐎', лошадь: '🐎', qush: '🐦', bird: '🐦', птица: '🐦', tulki: '🦊', fox: '🦊', лиса: '🦊',
+  panda: '🐼', ayiq: '🐻', bear: '🐻', медведь: '🐻', dinozavr: '🦖', dino: '🦖', динозавр: '🦖', olov: '🔥', fire: '🔥', огонь: '🔥',
+  yer: '🌍', earth: '🌍', dunyo: '🌍', земля: '🌍', pizza: '🍕', пицца: '🍕', tarvuz: '🍉', arbuz: '🍉', арбуз: '🍉', gilos: '🍒',
+  toj: '👑', crown: '👑', корона: '👑', olmos: '💎', diamond: '💎', алмаз: '💎', arvoh: '👻', ghost: '👻', robot: '🤖', робот: '🤖',
+  musiqa: '🎵', music: '🎵', kamalak: '🌈', rainbow: '🌈', радуга: '🌈', kema: '⛵', ship: '⛵', samolyot: '✈️', plane: '✈️', самолет: '✈️',
+  uy: '🏠', house: '🏠', дом: '🏠', delfin: '🐬', dolphin: '🐬', kit: '🐋', whale: '🐋', boyqush: '🦉', owl: '🦉', ari: '🐝', bee: '🐝',
+  ilon: '🐍', snake: '🐍', змея: '🐍', toshbaqa: '🐢', turtle: '🐢', quyon: '🐰', rabbit: '🐰', заяц: '🐰', qor: '❄️', snow: '❄️', снег: '❄️',
+  qorbobo: '🎅', archa: '🎄', yolka: '🎄', ёлка: '🎄', sovga: '🎁', gift: '🎁', kubok: '🏆', top: '⚽', futbol: '⚽', футбол: '⚽',
+  gitara: '🎸', guitar: '🎸', unicorn: '🦄', yolqiz: '🦄', единорог: '🦄', qurbaqa: '🐸', frog: '🐸', maymun: '🐵', monkey: '🐵',
+  fil: '🐘', elephant: '🐘', слон: '🐘', akula: '🦈', shark: '🦈', акула: '🦈', burgut: '🦅', eagle: '🦅', орёл: '🦅', qalb: '💖'
+};
+const norm = s => s.toLowerCase().replace(/[ʻʼ'’`‘]/g, '').replace(/[.,!?]/g, ' ').trim();
+function handleCommand(raw) {
+  raw = (raw || '').trim(); if (!raw) return;
+  if (S.mode === 'build' || S.mode === 'face') setMode('magic', true);
+  if (/\p{Extended_Pictographic}/u.test(raw) && [...raw].length <= 4) { makeEmoji(raw); toast(`${raw} yaratildi`); return; }
+  const words = norm(raw).split(/\s+/);
+  for (const w of words) {
+    if (['portla', 'portlat', 'boom', 'bum', 'explode', 'взрыв'].includes(w)) { explode(1.6); return; }
+    if (['rang', 'color', 'цвет'].includes(w)) { nextTheme(); return; }
+    for (const k in SHAPE_WORDS) if (SHAPE_WORDS[k].includes(w)) { setShape(k); return; }
+    if (EMOJI[w]) { makeEmoji(EMOJI[w]); toast(`${EMOJI[w]} ${w}`); return; }
+  }
+  makeText(raw.length > 18 ? raw.slice(0, 18) : raw); toast(`✨ “${raw}”`);
+}
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog = null;
+function startVoice() {
+  if (!SR) { toast('Bu brauzer ovozni tanimaydi — Chrome’da oching'); return; }
+  if (recog) { recog.stop(); return; }
+  recog = new SR(); recog.lang = $('#vlang').value; recog.interimResults = false; recog.maxAlternatives = 1;
+  recog.onresult = e => { const t = e.results[0][0].transcript; $('#cmd').value = t; handleCommand(t); };
+  recog.onerror = e => toast('Ovoz: ' + (e.error === 'not-allowed' ? 'mikrofonga ruxsat bering' : e.error));
+  recog.onend = () => { recog = null; $('#voiceBtn').classList.remove('on'); };
+  recog.start(); $('#voiceBtn').classList.add('on'); toast('🎤 Gapiring… masalan: “ajdar”');
+}
+
+/* ---------------- Explosion / pulses ---------------- */
+function explode(power = 1) {
+  for (let j = 0; j < N * 3; j += 3) {
+    const x = pos[j], y = pos[j + 1], z = pos[j + 2], l = Math.hypot(x, y, z) + 0.05, s = (8 + R() * 24) * power;
+    vel[j] += x / l * s + gs() * 5 * power; vel[j + 1] += y / l * s + gs() * 5 * power; vel[j + 2] += z / l * s + gs() * 5 * power;
+  }
+  S.springMul = 0.02; S.shake = 0.35 * power; S.kick = 1.4 * power;
+  emit(S.anchor, 0, 0, 0, (500 * power) | 0, 5 * power * S.scale + 1, 1.5);
+  toast(power > 1.5 ? '💥 MEGA PORTLASH!' : '💥 Portlash!');
+}
+function pulse(s) {
+  for (let j = 0; j < N * 3; j += 3) {
+    const x = pos[j], y = pos[j + 1], z = pos[j + 2], l = Math.hypot(x, y, z) + 0.05, k = s * 3.2 * (0.5 + R());
+    vel[j] += x / l * k; vel[j + 1] += y / l * k; vel[j + 2] += z / l * k;
+  }
+  S.kick = Math.max(S.kick, s * 0.6);
+}
+
+/* ---------------- Drawing in the air ---------------- */
+const MAXT = 9000, trailPos = new Float32Array(MAXT * 3); let trailN = 0; const lastT = new THREE.Vector3(1e9, 0, 0);
+const trailGeo = new THREE.BufferGeometry(); trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3).setUsage(THREE.DynamicDrawUsage));
+trailGeo.setDrawRange(0, 0);
+const trail = new THREE.Points(trailGeo, new THREE.PointsMaterial({ size: 0.16, map: glowTex, color: 0xb8f4ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+trail.frustumCulled = false; scene.add(trail);
+function addTrail(p) {
+  const d = lastT.distanceTo(p);
+  if (d < 0.035) return;
+  const steps = d > 1.2 ? 1 : Math.ceil(d / 0.035);
+  for (let s = 1; s <= steps && trailN < MAXT; s++) {
+    const t = steps === 1 ? 1 : s / steps;
+    trailPos[trailN * 3] = lerp(lastT.x, p.x, t); trailPos[trailN * 3 + 1] = lerp(lastT.y, p.y, t); trailPos[trailN * 3 + 2] = lerp(lastT.z, p.z, t);
+    trailN++;
+  }
+  if (trailN > 120) tut('trail');
+  lastT.copy(p); trailGeo.setDrawRange(0, trailN); trailGeo.attributes.position.needsUpdate = true;
+}
+function clearTrail() { trailN = 0; trailGeo.setDrawRange(0, 0); lastT.set(1e9, 0, 0); }
+function formDrawing() {
+  if (trailN < 15) { toast('Avval ☝️ barmoq bilan havoda chizing'); return; }
+  const v = new THREE.Vector3(), pts = new Float32Array(trailN * 3);
+  for (let i = 0; i < trailN; i++) { v.fromArray(trailPos, i * 3).applyMatrix4(inv); v.toArray(pts, i * 3); }
+  const cnt = trailN;
+  applyGen(n => {
+    const o = new Float32Array(n * 3);
+    for (let j = 0; j < n * 3; j += 3) { const k = ((R() * cnt) | 0) * 3; o[j] = pts[k] + gs() * 0.07; o[j + 1] = pts[k + 1] + gs() * 0.07; o[j + 2] = pts[k + 2] + gs() * 0.1; }
+    return { o };
+  }, 'draw');
+  clearTrail(); toast('✨ Chizmangiz jonlandi!'); tut('form');
+}
+
+/* ---------------- Hands in 3D (skeleton + cursors) ---------------- */
+let HAND_CONN = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[0,17],[17,18],[18,19],[19,20]];
+const skelPts = new Float32Array(42 * 3), skelLines = new Float32Array(2 * HAND_CONN.length * 6);
+const skelPG = new THREE.BufferGeometry(); skelPG.setAttribute('position', new THREE.BufferAttribute(skelPts, 3).setUsage(THREE.DynamicDrawUsage));
+const skelLG = new THREE.BufferGeometry(); skelLG.setAttribute('position', new THREE.BufferAttribute(skelLines, 3).setUsage(THREE.DynamicDrawUsage));
+const skelP = new THREE.Points(skelPG, new THREE.PointsMaterial({ size: 0.22, map: glowTex, color: 0x7df9ff, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
+const skelL = new THREE.LineSegments(skelLG, new THREE.LineBasicMaterial({ color: 0x5fd8ff, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending }));
+skelP.frustumCulled = skelL.frustumCulled = false; scene.add(skelP, skelL);
+const curPos = new Float32Array(6 * 3), curGeo = new THREE.BufferGeometry();
+curGeo.setAttribute('position', new THREE.BufferAttribute(curPos, 3).setUsage(THREE.DynamicDrawUsage)); curGeo.setDrawRange(0, 0);
+const cursors = new THREE.Points(curGeo, new THREE.PointsMaterial({ size: 0.9, map: glowTex, color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+cursors.frustumCulled = false; scene.add(cursors);
+
+/* ---------------- Fingertip sparks (magic fire) ---------------- */
+const SPM = 9000, spPos = new Float32Array(SPM * 3), spVel = new Float32Array(SPM * 3), spCol = new Float32Array(SPM * 3), spBase = new Float32Array(SPM * 3);
+const spLife = new Float32Array(SPM), spMax = new Float32Array(SPM).fill(1), spSize = new Float32Array(SPM);
+for (let i = 0; i < SPM; i++) { spSize[i] = 0.6 + R() * 1.8; spPos[i * 3 + 2] = -999; }
+let spHead = 0;
+const spGeo = new THREE.BufferGeometry();
+spGeo.setAttribute('position', new THREE.BufferAttribute(spPos, 3).setUsage(THREE.DynamicDrawUsage));
+spGeo.setAttribute('aColor', new THREE.BufferAttribute(spCol, 3).setUsage(THREE.DynamicDrawUsage));
+spGeo.setAttribute('aSize', new THREE.BufferAttribute(spSize, 1));
+const spMat = pMat.clone(); spMat.uniforms.uSize.value = 0.11; spMat.uniforms.uAlpha.value = 1;
+const sparks = new THREE.Points(spGeo, spMat); sparks.frustumCulled = false; scene.add(sparks);
+const spTmp = new THREE.Color();
+function themeColor(out) {
+  const th = THEMES[S.theme];
+  if (th.rainbow) return out.setHSL(R(), 1, 0.6);
+  const t = R(), c = th.c; return out.set(t < 0.5 ? c[1] : c[2]).lerp(new THREE.Color(t < 0.5 ? c[0] : c[1]), R() * 0.6);
+}
+function emit(p, vx, vy, vz, n, spread = 0.6, life = 1) {
+  for (let k = 0; k < n; k++) {
+    const i = spHead, j = i * 3; spHead = (spHead + 1) % SPM;
+    spPos[j] = p.x + gs() * 0.03; spPos[j + 1] = p.y + gs() * 0.03; spPos[j + 2] = p.z + gs() * 0.03;
+    spVel[j] = vx + gs() * spread; spVel[j + 1] = vy + gs() * spread + 0.4; spVel[j + 2] = vz + gs() * spread;
+    spMax[i] = spLife[i] = (0.35 + R() * 0.9) * life;
+    themeColor(spTmp); if (R() < 0.15) spTmp.setRGB(1, 1, 1);
+    spBase[j] = spTmp.r; spBase[j + 1] = spTmp.g; spBase[j + 2] = spTmp.b;
+  }
+}
+function updateSparks(dt) {
+  const damp = Math.exp(-dt * 1.6);
+  for (let i = 0, j = 0; i < SPM; i++, j += 3) {
+    if (spLife[i] <= 0) { if (spCol[j] !== 0) { spCol[j] = spCol[j + 1] = spCol[j + 2] = 0; } continue; }
+    spLife[i] -= dt;
+    spVel[j] *= damp; spVel[j + 1] = spVel[j + 1] * damp + 2.4 * dt; spVel[j + 2] *= damp;
+    spVel[j] += Math.sin(spPos[j + 1] * 3 + time * 4) * dt * 1.2;
+    spPos[j] += spVel[j] * dt; spPos[j + 1] += spVel[j + 1] * dt; spPos[j + 2] += spVel[j + 2] * dt;
+    const f = Math.max(0, spLife[i] / spMax[i]), a = f * f * (3 - 2 * f);
+    spCol[j] = spBase[j] * a; spCol[j + 1] = spBase[j + 1] * a; spCol[j + 2] = spBase[j + 2] * a;
+  }
+  spGeo.attributes.position.needsUpdate = spGeo.attributes.aColor.needsUpdate = true;
+}
+const TIPS = [4, 8, 12, 16, 20];
+function handSparks(dt) {
+  if (!S.sparks || S.mode === 'build' || S.mode === 'face') return;
+  for (const s of slots) {
+    if (!s.present) { s.prevTips = null; continue; }
+    if (!s.prevTips) s.prevTips = TIPS.map(k => s.sm[k].clone());
+    TIPS.forEach((k, idx) => {
+      const p = s.sm[k], pr = s.prevTips[idx];
+      const vx = (p.x - pr.x) / Math.max(dt, 1e-3), vy = (p.y - pr.y) / Math.max(dt, 1e-3), sp = Math.hypot(vx, vy);
+      let n = s.g === 'fist' ? 0 : 1 + Math.min(6, sp * 0.6);
+      if (s.g === 'point' && k === 8) n = 7 + Math.min(10, sp);
+      if (S.draw && k !== 8) n = 0;
+      if (R() < n % 1) n += 1;
+      if (n >= 1) emit(p, vx * 0.15, vy * 0.15, 0, n | 0, k === 8 && s.g === 'point' ? 0.35 : 0.5, s.g === 'point' ? 1.3 : 0.8);
+      pr.copy(p);
+    });
+  }
+}
+
+/* ---------------- Lightning ---------------- */
+const LTM = 6000, ltPos = new Float32Array(LTM * 3); let ltN = 0;
+const ltGeo = new THREE.BufferGeometry(); ltGeo.setAttribute('position', new THREE.BufferAttribute(ltPos, 3).setUsage(THREE.DynamicDrawUsage)); ltGeo.setDrawRange(0, 0);
+const lightning = new THREE.Points(ltGeo, new THREE.PointsMaterial({ size: 0.075, map: glowTex, color: 0xd8ecff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+const lightningGlow = new THREE.Points(ltGeo, new THREE.PointsMaterial({ size: 0.32, map: glowTex, color: 0x4f7dff, transparent: true, opacity: 0.35, depthWrite: false, blending: THREE.AdditiveBlending }));
+lightning.frustumCulled = lightningGlow.frustumCulled = false; scene.add(lightningGlow, lightning);
+function bolt(a, b, rough = 0.16, branch = true) {
+  let pts = [a.clone(), b.clone()]; const len = a.distanceTo(b); if (len < 0.05) return;
+  let amp = len * rough;
+  for (let lv = 0; lv < 6; lv++) {
+    const np = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const m = pts[i - 1].clone().add(pts[i]).multiplyScalar(0.5);
+      m.x += gs() * amp; m.y += gs() * amp; m.z += gs() * amp * 0.5; np.push(m, pts[i]);
+    }
+    pts = np; amp *= 0.55;
+  }
+  for (let i = 1; i < pts.length && ltN < LTM; i++) {
+    const p0 = pts[i - 1], p1 = pts[i], d = p0.distanceTo(p1), st = Math.max(1, Math.ceil(d / 0.03));
+    for (let s = 0; s < st && ltN < LTM; s++) { const t = s / st; ltPos[ltN * 3] = lerp(p0.x, p1.x, t); ltPos[ltN * 3 + 1] = lerp(p0.y, p1.y, t); ltPos[ltN * 3 + 2] = lerp(p0.z, p1.z, t); ltN++; }
+  }
+  if (branch && R() < 0.5) { const i = (pts.length * (0.2 + R() * 0.6)) | 0, p = pts[i]; const e = p.clone().add(new THREE.Vector3(gs(), gs(), gs() * 0.4).multiplyScalar(len * 0.35)); bolt(p, e, rough, false); }
+}
+const ltV = new THREE.Vector3();
+function updateLightning() {
+  ltN = 0;
+  if (S.bolts && S.mode === 'magic') {
+    const hs = slots.filter(s => s.present);
+    if (hs.length === 2) {
+      for (const k of TIPS) { const p = hs[0].sm[k], q = hs[1].sm[k]; if (p.distanceTo(q) < halfW * 1.5 && R() < 0.8) bolt(p, q); }
+    }
+    for (const s of hs) {
+      if (s.g === 'zoom' && R() < 0.9) bolt(s.sm[4], s.sm[8], 0.25, false);
+      if (s.g === 'fist' && S.charge > 0.15) {
+        const c = palmOf(s), n = 1 + ((S.charge * 4) | 0);
+        for (let i = 0; i < n; i++) { ltV.set(gs(), gs(), gs() * 0.3).normalize().multiplyScalar((0.8 + R() * 1.6) * (0.5 + S.charge)); bolt(c, c.clone().add(ltV), 0.22); }
+      }
+    }
+  }
+  ltGeo.setDrawRange(0, ltN); ltGeo.attributes.position.needsUpdate = true;
+}
+
+/* ---------------- Objects: grab 🤏, place, pin, float, draw with two hands ---------------- */
+const OBJ = [];
+const objMat = pMat.clone(); objMat.uniforms.uSize.value = 0.1; objMat.uniforms.uAlpha.value = 1;
+const OBJ_KINDS = [['circle', '⭕', 'Aylana'], ['square', '⬜', 'Kvadrat'], ['triangle', '🔺', 'Uchburchak'], ['star', '⭐', 'Yulduz'], ['heart', '💗', 'Yurak']];
+const vA = new THREE.Vector3(), vB = new THREE.Vector3();
+function polyVerts(kind) {
+  if (kind === 'square') return [0, 1, 2, 3].map(k => [Math.cos(k * Math.PI / 2), Math.sin(k * Math.PI / 2)]);
+  if (kind === 'triangle') return [0, 1, 2].map(k => { const a = Math.PI / 2 + k * TAU / 3; return [Math.cos(a), Math.sin(a)]; });
+  if (kind === 'star') return Array.from({ length: 10 }, (_, k) => { const a = Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 0.42 : 1; return [Math.cos(a) * r, Math.sin(a) * r]; });
+  return null;
+}
+function outlinePt(kind, t, out) {
+  if (kind === 'circle') { const a = t * TAU; return out.set(Math.cos(a), Math.sin(a), 0); }
+  if (kind === 'heart') { const a = t * TAU, s = Math.sin(a); return out.set(s * s * s, (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) / 16 + 0.15, 0); }
+  const v = polyVerts(kind), n = v.length, f = t * n, i = Math.floor(f) % n, u = f - Math.floor(f), b = v[(i + 1) % n];
+  return out.set(lerp(v[i][0], b[0], u), lerp(v[i][1], b[1], u), 0);
+}
+function genObjGeo(kind) {
+  const K = 2600, o = new Float32Array(K * 3), c = new Float32Array(K * 3), sz = new Float32Array(K), col = new THREE.Color();
+  const ga = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0, j = 0; i < K; i++, j += 3) {
+    const edge = R() < 0.75;
+    if (kind === 'cube') {
+      if (edge) { const e = (R() * 12) | 0, ax = e >> 2, s1 = (e & 1) ? 1 : -1, s2 = (e & 2) ? 1 : -1, t = R() * 2 - 1;
+        const p = ax === 0 ? [t, s1, s2] : ax === 1 ? [s1, t, s2] : [s1, s2, t]; o[j] = p[0]; o[j + 1] = p[1]; o[j + 2] = p[2]; }
+      else { const f = (R() * 3) | 0, s = R() < 0.5 ? -1 : 1, a = R() * 2 - 1, b = R() * 2 - 1; const p = f === 0 ? [s, a, b] : f === 1 ? [a, s, b] : [a, b, s]; o[j] = p[0]; o[j + 1] = p[1]; o[j + 2] = p[2]; }
+      o[j] *= 0.75; o[j + 1] *= 0.75; o[j + 2] *= 0.75;
+    } else if (kind === 'orb') {
+      const y = 1 - 2 * (i + 0.5) / K, rr = Math.sqrt(1 - y * y), th = i * ga, rad = edge ? 1 : Math.cbrt(R()) * 0.6;
+      o[j] = Math.cos(th) * rr * rad; o[j + 1] = y * rad; o[j + 2] = Math.sin(th) * rr * rad;
+    } else {
+      outlinePt(kind, R(), vA); const s = edge ? 1 + gs() * 0.015 : Math.sqrt(R()) * 0.97;
+      o[j] = vA.x * s; o[j + 1] = vA.y * s; o[j + 2] = gs() * 0.03;
+    }
+    themeColor(col); if (!edge) col.multiplyScalar(0.3); else if (R() < 0.12) col.setRGB(1, 1, 1);
+    c[j] = col.r; c[j + 1] = col.g; c[j + 2] = col.b; sz[i] = edge ? 0.8 + R() * 0.9 : 0.5 + R() * 0.6;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(o, 3)); g.setAttribute('aColor', new THREE.BufferAttribute(c, 3)); g.setAttribute('aSize', new THREE.BufferAttribute(sz, 1));
+  g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 3);
+  return g;
+}
+function addObject(kind, pos, size, rot = 0, state = 'pinned') {
+  const pts = new THREE.Points(genObjGeo(kind), objMat); pts.frustumCulled = false; scene.add(pts);
+  const o = { kind, pts, pos: pos.clone(), vel: new THREE.Vector3(), target: new THREE.Vector3(), off: new THREE.Vector3(), size, rot, state, flash: 1, hist: [], spin: 0.4 + R() * 0.6, ph: R() * TAU, corner: false };
+  OBJ.push(o); return o;
+}
+function removeAll() { if (OBJ.length) HIST.push({ t: 'clear', d: OBJ.map(ser) }); for (const o of OBJ) { scene.remove(o.pts); o.pts.geometry.dispose(); } OBJ.length = 0; slots.forEach(s => s.hold = null); mouse.hold = null; }
+function cornerHome(o) { return vB.set(-halfW + 1.3 + Math.cos(time * 0.9 + o.ph) * 0.45, -halfH + 1.5 + Math.sin(time * 1.3 + o.ph) * 0.35, 0); }
+function hitObject(p) {
+  let best = null, bd = Infinity;
+  for (const o of OBJ) { if (o.holder) continue; const d = p.distanceTo(o.pos) - o.size * 1.05; if (d < 0.35 && d < bd) { bd = d; best = o; } }
+  return best;
+}
+function grab(h, o, p) { o.state = 'held'; o.corner = false; o.holder = h; h.hold = o; o.off.copy(o.pos).sub(p); o.target.copy(o.pos); o.hist.length = 0; o.flash = 0.6; }
+function release(h, now) {
+  const o = h.hold; h.hold = null; h.busyUntil = now + 450; if (!o) return; o.holder = null; o.resz = null;
+  if (trashHot) { deleteObject(o, true); trashHot = false; toast('🗑 O‘chirildi — Ctrl+Z bilan qaytaring'); return; }
+  const H = o.hist; let vx = 0, vy = 0;
+  if (H.length > 2) { const a = H[0], b = H[H.length - 1], dt = Math.max(0.016, (b.t - a.t) / 1000); vx = (b.x - a.x) / dt; vy = (b.y - a.y) / dt; }
+  const sp = Math.hypot(vx, vy);
+  if (sp > 4.5) { const k = Math.min(1, 10 / sp) * 0.7; o.vel.set(vx * k, vy * k, 0); o.state = 'float'; toast('🌊 Suzib ketdi! Ushlab olsangiz to‘xtaydi'); }
+  else { o.vel.set(0, 0, 0); o.state = 'pinned'; o.flash = 1.2; toast('📌 Qotirildi'); tut('grab'); emit(o.pos, 0, 0, 0, 120, 2.2, 0.8); }
+}
+function heldMove(o, p, now) {
+  o.target.copy(p).add(o.off);
+  o.hist.push({ t: now, x: o.target.x, y: o.target.y }); while (o.hist.length > 7) o.hist.shift();
+}
+const isBusy = s => !!(s.hold || s.drawing || performance.now() < (s.busyUntil || 0));
+
+// two-hand drawing
+let draw2 = null, draw2Start = 0, preview = null, previewKind = '';
+S.drawKind = 'circle';
+function setPreview(kind, c, size, rot) {
+  if (!preview || previewKind !== kind) {
+    if (preview) { scene.remove(preview); preview.geometry.dispose(); }
+    preview = new THREE.Points(genObjGeo(kind), objMat); preview.frustumCulled = false; scene.add(preview); previewKind = kind;
+  }
+  preview.visible = true; preview.position.copy(c); preview.rotation.set(0, 0, rot); preview.scale.setScalar(Math.max(0.05, size));
+}
+function hidePreview() { if (preview) preview.visible = false; }
+function shapeFrom(a, b) { return { c: a.clone().add(b).multiplyScalar(0.5).setZ(0), size: a.distanceTo(b) / 2, rot: Math.atan2(b.y - a.y, b.x - a.x) }; }
+function finishDraw(sh) {
+  hidePreview();
+  if (sh && sh.size > 0.25) { const o = addObject(S.drawKind, sh.c, sh.size, sh.rot, 'pinned'); emit(o.pos, 0, 0, 0, 250, 3, 1); HIST.push({ t: 'add', o }); tut('draw2'); const m = OBJ_KINDS.find(k => k[0] === S.drawKind); toast(`${m[1]} ${m[2]} yaratildi — 🤏 ushlab ko‘chiring`); }
+}
+const pinchPt = (s, out) => out.copy(s.sm[4]).add(s.sm[8]).multiplyScalar(0.5);
+
+function objectsInteract(dt, now) {
+  if (S.mode !== 'build') {
+    for (const s of slots) { if (s.hold) release(s, now); s.pinching = false; s.drawing = false; }
+    if (draw2) { draw2 = null; hidePreview(); }
+    if (mouse.hold) release(mouse, now);
+    return;
+  }
+  // pinch state per hand
+  for (const s of slots) {
+    if (!s.pp) s.pp = new THREE.Vector3();
+    if (!s.present) { if (s.hold) release(s, now); s.pinching = false; s.drawing = false; continue; }
+    const was = s.pinching; s.pinching = was ? s.pinch < 0.6 : s.pinch < 0.38;
+    pinchPt(s, s.pp);
+    if (s.pinching && !was) { tut('pinch'); const o = hitObject(s.pp); if (o) grab(s, o, s.pp); }
+    if (!s.pinching && was && s.hold) release(s, now);
+  }
+  const [h0, h1] = slots, both = h0.present && h1.present && h0.pinching && h1.pinching;
+  // resize: one hand holds, other pinches
+  const holder = h0.hold ? h0 : h1.hold ? h1 : null, other = holder === h0 ? h1 : h0;
+  if (holder && other.present && other.pinching && !other.hold) {
+    const o = holder.hold, d = holder.pp.distanceTo(other.pp);
+    if (!o.resz) o.resz = { d: Math.max(0.2, d), s: o.size };
+    o.size = clamp(o.resz.s * d / o.resz.d, 0.15, 7); other.drawing = true;
+  } else { if (holder && holder.hold.resz) holder.hold.resz = null; if (!draw2) { h0.drawing = h1.drawing = false; } }
+  // draw a new shape with two pinches
+  if (both && !h0.hold && !h1.hold) {
+    if (!draw2) { if (!draw2Start) draw2Start = now; if (now - draw2Start > 160) { draw2 = { sh: null }; h0.drawing = h1.drawing = true; } }
+    if (draw2) { draw2.sh = shapeFrom(h0.pp, h1.pp); setPreview(S.drawKind, draw2.sh.c, draw2.sh.size, draw2.sh.rot); }
+  } else {
+    draw2Start = 0;
+    if (draw2) { finishDraw(draw2.sh); draw2 = null; h0.drawing = h1.drawing = false; h0.busyUntil = h1.busyUntil = now + 450; }
+  }
+  for (const s of slots) if (s.hold) heldMove(s.hold, s.pp, now);
+  if (mouse.hold) heldMove(mouse.hold, vA.set(mouse.x, mouse.y, 0), now);
+  if (mouse.draw) { const sh = shapeFrom(mouse.draw, vA.set(mouse.x, mouse.y, 0)); mouse.draw.sh = sh; setPreview(S.drawKind, sh.c, sh.size, sh.rot); }
+}
+
+function updateObjects(dt) {
+  for (const o of OBJ) {
+    if (o.corner) o.pos.copy(cornerHome(o));
+    else if (o.state === 'held') o.pos.lerp(o.target, 1 - Math.exp(-dt * 18));
+    else if (o.state === 'float') {
+      o.pos.addScaledVector(o.vel, dt); const r = o.size * 0.9, bx = halfW - r, by = halfH - r;
+      if (o.pos.x > bx) { o.pos.x = bx; o.vel.x = -Math.abs(o.vel.x); } if (o.pos.x < -bx) { o.pos.x = -bx; o.vel.x = Math.abs(o.vel.x); }
+      if (o.pos.y > by) { o.pos.y = by; o.vel.y = -Math.abs(o.vel.y); } if (o.pos.y < -by) { o.pos.y = -by; o.vel.y = Math.abs(o.vel.y); }
+      const sp = Math.hypot(o.vel.x, o.vel.y);
+      if (sp > 2.5) o.vel.multiplyScalar(Math.exp(-dt * 0.4)); else if (sp < 0.7) { if (sp < 1e-3) o.vel.set(gs(), gs(), 0); o.vel.multiplyScalar(0.7 / Math.max(1e-3, Math.hypot(o.vel.x, o.vel.y))); }
+      o.rot += dt * 0.3 * o.spin;
+    }
+    const is3D = o.kind === 'cube' || o.kind === 'orb';
+    o.flash *= Math.exp(-dt * 4);
+    o.pts.position.copy(o.pos);
+    if (is3D) o.pts.rotation.set(time * 0.5 * o.spin + o.ph, time * 0.7 * o.spin, 0);
+    else o.pts.rotation.set(Math.sin(time * 0.8 + o.ph) * 0.15, Math.sin(time * 0.6 + o.ph) * 0.25, o.rot);
+    o.pts.scale.setScalar(o.size * (1 + o.flash * 0.2 + (o.state === 'held' ? 0.06 : 0)));
+  }
+}
+
+/* ---------------- Camera + MediaPipe ---------------- */
+const video = $('#video');
+const cov = { dw: 1, dh: 1, ox: 0, oy: 0 };
+function computeCover() {
+  const vw = video.videoWidth || 1280, vh = video.videoHeight || 720, s = Math.max(innerWidth / vw, innerHeight / vh);
+  cov.dw = vw * s; cov.dh = vh * s; cov.ox = (innerWidth - cov.dw) / 2; cov.oy = (innerHeight - cov.dh) / 2;
+}
+// landmark (normalized, un-mirrored) -> world point on z≈0 plane, aligned with the mirrored full-screen video
+function lmToWorld(l, out) {
+  const sx = cov.ox + (1 - l.x) * cov.dw, sy = cov.oy + l.y * cov.dh, upx = 2 * halfW / innerWidth;
+  return out.set((sx / innerWidth * 2 - 1) * halfW, -(sy / innerHeight * 2 - 1) * halfH, -l.z * cov.dw * upx * 0.6);
+}
+function setAR(on) {
+  S.ar = on && camOn; document.body.classList.toggle('ar', S.ar); stars.visible = !S.ar;
+  $('#tAR').classList.toggle('on', S.ar);
+}
+let gestRec = null, camStream = null;
+let mp = null, vision = null, handLm = null, faceLm = null, faceEdges = null, camOn = false, lastVT = -1, VA = 4 / 3;
+const slots = [0, 1].map(() => ({ present: false, g: 'none', cand: 'none', candN: 0, sm: Array.from({ length: 21 }, () => new THREE.Vector3()), hs: 0.2, pinch: 0, fistT: 0, pb: null, zb: null, lost: 0 }));
+
+async function openCamera(deviceId) {
+  if (camStream) camStream.getTracks().forEach(t => t.stop());
+  const v = { width: { ideal: 1280 }, height: { ideal: 720 } };
+  if (deviceId) v.deviceId = { exact: deviceId }; else v.facingMode = 'user';
+  camStream = await navigator.mediaDevices.getUserMedia({ video: v, audio: false });
+  video.srcObject = camStream; await video.play();
+  VA = (video.videoWidth || 4) / (video.videoHeight || 3); computeCover(); lastVT = -1;
+}
+async function listCameras() {
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    const sel = $('#camSel'), cur = camStream && camStream.getVideoTracks()[0].getSettings().deviceId;
+    sel.innerHTML = cams.map((c, i) => `<option value="${c.deviceId}" ${c.deviceId === cur ? 'selected' : ''}>${(c.label || 'Kamera ' + (i + 1)).slice(0, 40)}</option>`).join('');
+    $('#camRow').style.display = cams.length > 1 ? 'flex' : 'none';
+  } catch (e) { }
+}
+async function startCamera() {
+  const st = $('#startStatus');
+  try {
+    st.textContent = '📷 Kameraga ruxsat so‘ralmoqda…';
+    await openCamera(null);
+    st.textContent = '🧠 Sun’iy intellekt modeli yuklanmoqda…';
+    mp = await import(MP_URL);
+    vision = await mp.FilesetResolver.forVisionTasks(MP_WASM);
+    const opts = (path, delegate) => ({
+      baseOptions: { modelAssetPath: path, delegate }, runningMode: 'VIDEO', numHands: 2,
+      minHandDetectionConfidence: 0.6, minHandPresenceConfidence: 0.5, minTrackingConfidence: 0.5
+    });
+    // 1st choice: Google's trained Gesture Recognizer (landmarks + ML gestures); fallback: landmarks only
+    try { gestRec = await mp.GestureRecognizer.createFromOptions(vision, opts(GEST_MODEL, 'GPU')); }
+    catch (e) { try { gestRec = await mp.GestureRecognizer.createFromOptions(vision, opts(GEST_MODEL, 'CPU')); } catch (e2) { gestRec = null; } }
+    if (!gestRec) {
+      try { handLm = await mp.HandLandmarker.createFromOptions(vision, opts(HAND_MODEL, 'GPU')); }
+      catch (e) { handLm = await mp.HandLandmarker.createFromOptions(vision, opts(HAND_MODEL, 'CPU')); }
+    }
+    listCameras();
+    if (mp.HandLandmarker.HAND_CONNECTIONS) HAND_CONN = mp.HandLandmarker.HAND_CONNECTIONS.map(c => [c.start, c.end]);
+    camOn = true; computeCover(); setAR(true);
+    return true;
+  } catch (e) {
+    console.error(e);
+    toast(e.name === 'NotAllowedError' ? 'Kameraga ruxsat berilmadi — sichqoncha rejimi' : 'Kamera ishga tushmadi — sichqoncha rejimi');
+    return false;
+  }
+}
+
+function classify(lm) {
+  const D = (a, b) => { const p = lm[a], q = lm[b]; return Math.hypot((p.x - q.x) * VA, p.y - q.y, (p.z - q.z) * VA); };
+  const hs = D(0, 9) || 1e-4;
+  const t = D(4, 17) / hs > 1.0, i = D(8, 0) > D(6, 0) * 1.12, m = D(12, 0) > D(10, 0) * 1.12, r = D(16, 0) > D(14, 0) * 1.12, p = D(20, 0) > D(18, 0) * 1.12;
+  let g;
+  if (!i && !m && !r && !p) g = 'fist';
+  else if (i && m && r && p) g = 'palm';
+  else if (i && m && !r && !p) g = 'victory';
+  else if (i && m && r && !p) g = 'three';
+  else if (i && !m && !r && p) g = 'rock';
+  else if (i && !m && !r && !p) g = t ? 'zoom' : 'point';
+  else g = 'other';
+  return { g, hs, pinch: D(4, 8) / hs };
+}
+
+// One Euro filter: kills jitter when the hand is still, stays responsive when it moves fast
+class OneEuro {
+  constructor(minCut = 1.5, beta = 0.6, dCut = 1) { this.mc = minCut; this.b = beta; this.dc = dCut; this.x = null; this.dx = 0; this.t = 0; }
+  static a(cut, dt) { const tau = 1 / (TAU * cut); return 1 / (1 + tau / dt); }
+  f(x, t) {
+    if (this.x === null) { this.x = x; this.t = t; return x; }
+    const dt = Math.max(1e-3, t - this.t); this.t = t;
+    this.dx += OneEuro.a(this.dc, dt) * ((x - this.x) / dt - this.dx);
+    this.x += OneEuro.a(this.mc + this.b * Math.abs(this.dx), dt) * (x - this.x); return this.x;
+  }
+}
+const DWELL = new Set(['victory', 'three', 'rock']), DWELL_MS = 450;
+function setG(slot, g) {
+  const prev = slot.g, now = performance.now(); slot.g = g; slot.pb = null; slot.zb = null;
+  if (g === 'fist') slot.fistT = now;
+  slot.dwell = DWELL.has(g) ? { g, t0: now, fired: false } : null;
+  if (g === 'palm' && S.mode === 'magic') tut('palm');
+  if (isBusy(slot) || slot.pinching || S.mode !== 'magic') return;
+  if (prev === 'fist' && (g === 'palm' || g === 'other')) {
+    const held = (now - slot.fistT) / 1000;
+    if (held > 0.3) { explode(clamp(0.6 + held * 0.6, 0.6, 2.2)); tut('boom'); }
+  }
+}
+// discrete gestures fire only after a short hold (no accidental triggers); progress shows as a ring on the HUD
+function processDwell(now) {
+  let p = 0;
+  for (const s of slots) {
+    const d = s.dwell;
+    if (!d || d.fired || !s.present || s.g !== d.g || isBusy(s) || s.pinching) continue;
+    if (S.mode !== 'magic' && !(S.mode === 'draw' && d.g === 'victory')) continue;
+    const q = (now - d.t0) / DWELL_MS;
+    if (q >= 1) { d.fired = true; fireGesture(d.g); } else p = Math.max(p, q);
+  }
+  $('#gestE').style.setProperty('--p', p.toFixed(3));
+}
+function fireGesture(g) {
+  if (S.mode === 'draw') { if (g === 'victory') { formDrawing(); } return; }
+  if (g === 'victory') { nextShape(); tut('next'); }
+  else if (g === 'three') nextTheme();
+  else if (g === 'rock') toggleForce();
+}
+
+const MODEL_G = { Closed_Fist: 'fist', Open_Palm: 'palm', Pointing_Up: 'point', Victory: 'victory', ILoveYou: 'rock', Thumb_Up: 'thumb' };
+const wTmp = new THREE.Vector3();
+function onHands(res, now) {
+  const L = res.landmarks || [], G = res.gestures || [];
+  const det = L.map((lm, i) => ({ lm, mg: G[i] && G[i][0], w: lmToWorld(lm[0], new THREE.Vector3()) }));
+  // stable identities: match each detection to the slot whose wrist was nearest (hands can cross)
+  const pairs = [], assign = [null, null], used = new Set();
+  det.forEach((d, i) => slots.forEach((s, k) => pairs.push({ i, k, d: s.present ? s.sm[0].distanceTo(d.w) : 50 + k })));
+  pairs.sort((a, b) => a.d - b.d);
+  for (const p of pairs) { if (used.has(p.i) || assign[p.k]) continue; assign[p.k] = det[p.i]; used.add(p.i); }
+  const t = now / 1000;
+  if (det.length) tut('hand');
+  for (let s = 0; s < 2; s++) {
+    const slot = slots[s], d = assign[s];
+    if (!d) { if (slot.present && now - slot.lost > 250) { slot.present = false; setG(slot, 'none'); slot.cand = 'none'; slot.filt = null; } continue; }
+    slot.lost = now; slot.present = true;
+    const c = classify(d.lm); slot.hs = c.hs; slot.pinch = c.pinch;
+    if (!slot.filt) slot.filt = Array.from({ length: 63 }, (_, i) => new OneEuro(i % 3 === 2 ? 0.8 : 1.5, 0.6));
+    const f = slot.filt;
+    for (let k = 0; k < 21; k++) { lmToWorld(d.lm[k], wTmp); slot.sm[k].set(f[k * 3].f(wTmp.x, t), f[k * 3 + 1].f(wTmp.y, t), f[k * 3 + 2].f(wTmp.z, t)); }
+    let g = c.g;
+    if (d.mg && d.mg.score > 0.62 && MODEL_G[d.mg.categoryName]) { const mg = MODEL_G[d.mg.categoryName]; if (!(c.g === 'zoom' && mg === 'point') && !(c.g === 'three' && mg === 'palm')) g = mg; }
+    slot.conf = d.mg ? d.mg.score : 1;
+    if (g === slot.cand) slot.candN++; else { slot.cand = g; slot.candN = 1; }
+    if (slot.candN >= 3 && slot.g !== g) setG(slot, g);
+  }
+}
+
+/* ---------------- Face mask ---------------- */
+let faceFirst = false;
+async function startFace() {
+  if (!camOn) { toast('🎭 Yuz niqobi uchun kamera kerak'); return; }
+  if (!faceLm) {
+    toast('🧠 Yuz modeli yuklanmoqda…');
+    try {
+      faceLm = await mp.FaceLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: FACE_MODEL, delegate: 'GPU' }, runningMode: 'VIDEO', numFaces: 1 });
+    } catch (e) {
+      try { faceLm = await mp.FaceLandmarker.createFromOptions(vision, { baseOptions: { modelAssetPath: FACE_MODEL, delegate: 'CPU' }, runningMode: 'VIDEO', numFaces: 1 }); }
+      catch (e2) { console.error(e2); toast('Yuz modeli yuklanmadi'); return; }
+    }
+    const F = mp.FaceLandmarker, tess = F.FACE_LANDMARKS_TESSELATION || [], cont = F.FACE_LANDMARKS_CONTOURS || [];
+    faceEdges = tess.concat(cont, cont, cont).map(c => [c.start, c.end]);
+  }
+  assignFace();
+  S.face = true; faceFirst = true; S.cur = 'face'; S.regen = null;
+  S.ry = ((S.ry + Math.PI) % TAU + TAU) % TAU - Math.PI; S.rxT = 0; S.ryT = 0; S.rzT = 0; S.scaleT = 1;
+  markShapes(); toast('🎭 Yuz niqobi — kameraga qarang, boshingizni burang');
+}
+function assignFace() { if (!faceEdges) return; const E = faceEdges.length; for (let i = 0; i < N; i++) { faceE[i] = (R() * E) | 0; faceT[i] = R(); } }
+function stopFace(back) { S.face = false; if (back) setShape('galaxy'); else markShapes(); }
+const fx = new Float32Array(478), fy = new Float32Array(478), fz = new Float32Array(478);
+function onFace(lms) {
+  const n = lms.length; let cx = 0, cy = 0, cz = 0;
+  for (const l of lms) { cx += l.x; cy += l.y; cz += l.z; } cx /= n; cy /= n; cz /= n;
+  const top = lms[10], bot = lms[152], fh = Math.hypot((top.x - bot.x) * VA, top.y - bot.y) || 0.3;
+  if (S.ar) { // AR: mask sits exactly on the real face
+    const w = new THREE.Vector3();
+    for (let k = 0; k < n; k++) { lmToWorld(lms[k], w); fx[k] = w.x; fy[k] = w.y; fz[k] = w.z * 1.4; }
+  } else {
+    const sc = 6.0 / fh, ox = (0.5 - cx) * 2 * halfW * 0.3, oy = (0.5 - cy) * 2 * halfH * 0.3;
+    for (let k = 0; k < n; k++) { const l = lms[k]; fx[k] = (cx - l.x) * VA * sc + ox; fy[k] = (cy - l.y) * sc + oy; fz[k] = (cz - l.z) * VA * sc; }
+  }
+  const e = inv.elements, E = faceEdges;
+  for (let i = 0, j = 0; i < N; i++, j += 3) {
+    const ed = E[faceE[i]], a = ed[0], b = ed[1], t = faceT[i];
+    if (a >= n || b >= n) continue;
+    const x = lerp(fx[a], fx[b], t), y = lerp(fy[a], fy[b], t), z = lerp(fz[a], fz[b], t);
+    tgt[j] = e[0] * x + e[4] * y + e[8] * z + e[12]; tgt[j + 1] = e[1] * x + e[5] * y + e[9] * z + e[13]; tgt[j + 2] = e[2] * x + e[6] * y + e[10] * z + e[14];
+  }
+  if (faceFirst) { faceFirst = false; themeColors(); tut('face'); }
+}
+
+function detect(now) {
+  if (!camOn || video.readyState < 2 || video.currentTime === lastVT) return;
+  lastVT = video.currentTime;
+  try {
+    const r = gestRec ? gestRec.recognizeForVideo(video, now) : handLm.detectForVideo(video, now); onHands(r, now);
+    if (S.face && faceLm) { const f = faceLm.detectForVideo(video, now); if (f.faceLandmarks && f.faceLandmarks[0]) onFace(f.faceLandmarks[0]); }
+  } catch (e) { console.warn(e); }
+}
+
+/* ---------------- Interaction → forces ---------------- */
+const F = new Float32Array(8 * 6); let FN = 0;
+const inv = new THREE.Matrix4(), tv = new THREE.Vector3(), forceWorld = [];
+const mouse = { x: 0, y: 0, t: -1e9, down: false, downT: 0, over: false };
+function addForce(p, type) {
+  if (FN >= 8) return;
+  const rad = type === 1 ? 2.4 : type === 2 ? 1.4 : 1.7, str = type === 1 ? 45 : type === 2 ? 22 : 90;
+  tv.copy(p).applyMatrix4(inv); const o = FN * 6;
+  F[o] = tv.x; F[o + 1] = tv.y; F[o + 2] = tv.z; F[o + 3] = rad / S.scale; F[o + 4] = str / S.scale; F[o + 5] = type === 1 ? 1 : 0;
+  FN++; forceWorld.push(p);
+}
+function palmOf(slot) { const s = slot.sm; return tv.set(0, 0, 0).add(s[0]).add(s[5]).add(s[9]).add(s[13]).add(s[17]).multiplyScalar(0.2).clone(); }
+const GEST = {
+  none: ['👋', 'Qo‘lingizni kameraga ko‘rsating'], point: ['☝️', 'Ko‘rsatkich — zarrachalarni itaradi'], victory: ['✌️', 'Keyingi shakl'],
+  three: ['🤟', 'Rang almashdi'], fist: ['✊', 'Zaryad yig‘ilmoqda… kaftni oching!'], palm: ['🖐', 'Shakl kaftingizda — qo‘lni bursangiz aylanadi'],
+  zoom: ['👆', 'Barmoqlarni ochib-yuming — masshtab'], rock: ['🤘', 'Kuch turi almashdi'], two: ['🙌', 'Energiya shari — qo‘llarni yaqinlashtiring/uzoqlashtiring'],
+  other: ['✋', 'Ishorani aniqroq ko‘rsating'], grab: ['🤏', 'Ushlab turibsiz — qo‘ysangiz qotadi, otsangiz suzadi'],
+  pinch: ['🤏', 'Chimdish — ob‘ektga yaqin chimdib ushlang'], build: ['🔷', 'Qurish: 🤏 ushlang yoki 🤏🤏 ikki qo‘l bilan chizing'],
+  thumb: ['👍', 'Zo‘r!'], resize: ['↔️', 'Kattalashtiryapsiz — qo‘llarni yaqinlashtiring/uzoqlashtiring'], draw2: ['🤏🤏', 'Shakl chizyapsiz — cho‘zing, qo‘yib yuboring'], mouse: ['🖱', 'Sichqoncha bilan boshqaring'], draw: ['✍️', 'Havoda chizyapsiz…']
+};
+let hudG = '';
+function setHud(g) {
+  if (g === hudG) return; hudG = g; const v = GEST[g] || GEST.none;
+  const e = $('#gestE'); e.textContent = v[0]; $('#gestT').textContent = v[1];
+  e.classList.add('pop'); setTimeout(() => e.classList.remove('pop'), 200);
+}
+let lastSeen = 0;
+const wrapA = a => Math.atan2(Math.sin(a), Math.cos(a));
+function interact(dt, now) {
+  FN = 0; forceWorld.length = 0;
+  const a = slots[0], b = slots[1];
+  let gest = camOn ? 'none' : 'mouse', anyFist = false, rotCtl = false, fistT = Infinity;
+  if (a.present || b.present) lastSeen = now;
+  const hs = slots.filter(s => s.present && !isBusy(s) && !s.pinching);
+  if (S.mode === 'build' && slots.some(s => s.present && (isBusy(s) || s.pinching))) gest = draw2 ? 'draw2' : slots.some(s => s.hold) ? (slots[0].drawing || slots[1].drawing ? 'resize' : 'grab') : 'pinch';
+  if (S.mode === 'build') {
+    // 🔷 Build mode: only grab / place / draw — no forces, no explosions
+    for (const s of slots) if (s.present && s.pp) forceWorld.push(s.pp);
+    if (mouse.hold || mouse.draw) gest = mouse.hold ? 'grab' : 'draw2';
+    else if (gest === 'none' || gest === 'mouse') gest = slots.some(s => s.present) ? 'build' : (camOn ? 'none' : 'mouse');
+    if (S.auto) S.ryT += dt * 0.22;
+    S.charge = Math.max(0, S.charge - dt * 3); S.gatherT = 0;
+  } else {
+  if (S.ar && !S.face) {
+    // ---- AR: the shape lives on your hands ----
+    let base = null;
+    if (hs.length === 2) {
+      const pa = palmOf(hs[0]), pb = palmOf(hs[1]), dist = pa.distanceTo(pb), ang = Math.atan2(pb.y - pa.y, pb.x - pa.x);
+      S.anchorT.copy(pa).add(pb).multiplyScalar(0.5); base = clamp(dist * 0.15, 0.1, 3);
+      S.rzT = S.rz + wrapA(ang - S.rz); rotCtl = true; gest = 'two';
+    } else if (hs.length === 1) {
+      const s = hs[0], p = palmOf(s), hw = s.sm[0].distanceTo(s.sm[9]);
+      const dir = tv.copy(s.sm[9]).sub(s.sm[0]);
+      if (s.g === 'palm' || s.g === 'other' || s.g === 'fist') {
+        S.anchorT.copy(p).addScaledVector(dir, s.g === 'fist' ? 0 : 0.6); base = clamp(hw * 0.5, 0.1, 2.5);
+        const roll = Math.atan2(dir.y, dir.x) - Math.PI / 2; S.rzT = S.rz + wrapA(roll - S.rz);
+      }
+    } else if (now - lastSeen > 1200) { S.anchorT.set(0, 0, 0); base = 1; S.rzT *= 1 - dt; }
+    if (base !== null) S.baseScale = base;
+    for (const s of hs) {
+      switch (s.g) {
+        case 'point': { const t = s.sm[8]; if (S.draw) { addTrail(t); gest = 'draw'; forceWorld.push(t); } else { addForce(t, S.forceMode); if (hs.length < 2) gest = 'point'; } break; }
+        case 'fist': anyFist = true; fistT = Math.min(fistT, s.fistT); gest = 'fist'; break;
+        case 'palm': if (hs.length < 2) gest = 'palm'; break;
+        case 'zoom': { if (!s.zb) s.zb = { p: Math.max(0.08, s.pinch), u: S.user }; S.user = clamp(s.zb.u * s.pinch / s.zb.p, 0.3, 3.5); gest = 'zoom'; break; }
+        default: if (gest === 'none') gest = s.g;
+      }
+    }
+    S.scaleT = S.baseScale * S.user;
+  } else if (a.present && b.present && a.g === 'palm' && b.g === 'palm' && !S.face) {
+    const pa = palmOf(a), pb = palmOf(b), dist = Math.hypot(pa.x - pb.x, pa.y - pb.y), ang = Math.atan2(pb.y - pa.y, pb.x - pa.x);
+    if (!S.two) S.two = { d: Math.max(dist, 0.3), s: S.scaleT, a: ang, r: S.rzT };
+    S.scaleT = clamp(S.two.s * dist / S.two.d, 0.25, 3.5);
+    let da = ang - S.two.a; da = Math.atan2(Math.sin(da), Math.cos(da)); S.rzT = S.two.r + da;
+    rotCtl = true; gest = 'two';
+  } else {
+    S.two = null;
+    for (const s of slots) {
+      if (!s.present || isBusy(s) || s.pinching) continue;
+      switch (s.g) {
+        case 'point': { const t = s.sm[8]; if (S.draw) { addTrail(t); gest = 'draw'; forceWorld.push(t); } else { addForce(t, S.forceMode); gest = 'point'; } break; }
+        case 'fist': anyFist = true; fistT = Math.min(fistT, s.fistT); gest = 'fist'; break;
+        case 'palm': {
+          const p = palmOf(s); addForce(p, 2); gest = 'palm';
+          if (S.face) break;
+          if (!s.pb) s.pb = { x: p.x, y: p.y, ry: S.ryT, rx: S.rxT };
+          S.ryT = s.pb.ry + (p.x - s.pb.x) * 0.6; S.rxT = clamp(s.pb.rx - (p.y - s.pb.y) * 0.45, -1.4, 1.4); rotCtl = true; break;
+        }
+        case 'zoom': { if (!s.zb) s.zb = { p: Math.max(0.08, s.pinch), s: S.scaleT }; S.scaleT = clamp(s.zb.s * s.pinch / s.zb.p, 0.25, 3.5); gest = 'zoom'; break; }
+        default: if (gest === 'none') gest = s.g;
+      }
+    }
+  }
+  if (!S.ar || S.face) S.anchorT.set(0, 0, 0);
+  // mouse
+  if (mouse.hold || mouse.draw) gest = mouse.hold ? 'grab' : 'draw2';
+  else if (mouse.over && now - mouse.t < 1800) {
+    const mp3 = new THREE.Vector3(mouse.x, mouse.y, 0);
+    if (mouse.down) { anyFist = true; fistT = Math.min(fistT, mouse.downT); gest = 'fist'; }
+    else if (S.draw) { addTrail(mp3); forceWorld.push(mp3); gest = 'draw'; }
+    else { addForce(mp3, S.forceMode); if (gest === 'none') gest = 'mouse'; }
+  }
+  S.gatherT = anyFist ? 1 : 0;
+  S.charge = anyFist ? clamp((now - fistT) / 2000, 0, 1) : Math.max(0, S.charge - dt * 3);
+  if (!rotCtl && S.auto && !S.face) S.ryT += dt * 0.22;
+  if (now - lastSeen > 2500 && !S.face) { S.rxT *= 1 - dt; S.rzT *= 1 - dt; }
+  if (S.face) { S.rxT = 0; S.ryT = 0; S.rzT = 0; S.scaleT = 1; }
+  }
+  if (S.mode !== 'magic') { S.gatherT = 0; S.charge = 0; }
+  setHud(gest);
+  // visuals: skeleton & cursors
+  let sp = 0, sl = 0;
+  for (const s of slots) {
+    if (!s.present || !S.skel) continue;
+    for (let k = 0; k < 21; k++) s.sm[k].toArray(skelPts, (sp++) * 3);
+    for (const [i, j] of HAND_CONN) { s.sm[i].toArray(skelLines, (sl++) * 3); s.sm[j].toArray(skelLines, (sl++) * 3); }
+  }
+  skelPG.setDrawRange(0, sp); skelLG.setDrawRange(0, sl);
+  skelPG.attributes.position.needsUpdate = skelLG.attributes.position.needsUpdate = true;
+  const cn = Math.min(6, forceWorld.length); for (let i = 0; i < cn; i++) forceWorld[i].toArray(curPos, i * 3);
+  curGeo.setDrawRange(0, cn); curGeo.attributes.position.needsUpdate = true;
+  cursors.material.color.set(S.mode === 'build' ? (slots.some(s => s.pinching) || mouse.hold ? 0x5dff9b : 0xffffff) : S.draw ? 0xb8f4ff : S.forceMode ? 0xff9bf0 : 0xffffff);
+  cursors.material.size = S.mode === 'build' ? 0.6 : 0.9;
+}
+function toggleForce() { S.forceMode = S.forceMode ? 0 : 1; $('#tForce').textContent = S.forceMode ? '🌀 Kuch: girdob' : '💨 Kuch: itarish'; toast(S.forceMode ? '🌀 Girdob — zarrachalar aylanib tortiladi' : '💨 Itarish'); }
+
+/* ---------------- Physics ---------------- */
+let time = 0;
+function physics(dt) {
+  const n = N, p = pos, v = vel, t = tgt, k = stiff;
+  const spring = 9 * S.springMul, damp = Math.exp(-dt * (S.gather > 0.5 ? 2.2 : 3.4));
+  const g = S.gather, gf = 1 - g * 0.93, sw = g * 5 * (1 + S.charge * 2);
+  const tm = time, tb = 0.6 * S.turb * (1 + audioLevel * S.audioGain * 3) + S.charge * 3;
+  // living shapes: heart beats, butterfly flaps
+  const ph = (tm * 1.25) % 1, beat = S.cur === 'heart' ? 1 + 0.1 * Math.exp(-ph * 9) + 0.06 * Math.exp(-Math.abs(ph - 0.22) * 14) : 1;
+  const flap = S.cur === 'butterfly' ? Math.sin(tm * 6) * 1.1 : 0, gb = gf * beat;
+  for (let i = 0, j = 0; i < n; i++, j += 3) {
+    const px = p[j], py = p[j + 1], pz = p[j + 2], kk = spring * k[i], tx = t[j];
+    let ax = (tx * gb - px) * kk, ay = (t[j + 1] * gb - py) * kk, az = ((t[j + 2] + (flap ? Math.abs(tx) * flap : 0)) * gb - pz) * kk;
+    if (sw > 0.01) { ax -= pz * sw; az += px * sw; }
+    if (tb > 0) { ax += Math.sin(py * 1.3 + tm * 1.1 + k[i] * 6) * tb; ay += Math.sin(pz * 1.5 + tm * 0.9) * tb; az += Math.sin(px * 1.4 + tm * 1.3) * tb; }
+    for (let f = 0; f < FN; f++) {
+      const o = f * 6, dx = px - F[o], dy = py - F[o + 1], dz = pz - F[o + 2], d2 = dx * dx + dy * dy + dz * dz, r = F[o + 3];
+      if (d2 < r * r) {
+        const d = Math.sqrt(d2) + 1e-3, fall = 1 - d / r, s = F[o + 4] * fall * fall / d;
+        if (F[o + 5] === 0) { ax += dx * s; ay += dy * s; az += dz * s; }
+        else { ax += (-dx * 0.7 - dy * 2.4) * s; ay += (-dy * 0.7 + dx * 2.4) * s; az -= dz * 0.7 * s; }
+      }
+    }
+    const vx = (v[j] + ax * dt) * damp, vy = (v[j + 1] + ay * dt) * damp, vz = (v[j + 2] + az * dt) * damp;
+    v[j] = vx; v[j + 1] = vy; v[j + 2] = vz;
+    p[j] = px + vx * dt; p[j + 1] = py + vy * dt; p[j + 2] = pz + vz * dt;
+  }
+}
+
+/* ---------------- Audio ---------------- */
+let actx = null, analyser = null, fft = null, micSrc = null, micStream = null, musicSrc = null, audioEl = null, audioLevel = 0, bassAvg = 0, lastBeat = 0;
+function ensureAudio() {
+  if (!actx) { actx = new (window.AudioContext || window.webkitAudioContext)(); analyser = actx.createAnalyser(); analyser.fftSize = 512; analyser.smoothingTimeConstant = 0.7; fft = new Uint8Array(analyser.frequencyBinCount); }
+  if (actx.state === 'suspended') actx.resume();
+}
+async function toggleMic() {
+  ensureAudio();
+  if (micSrc) { micSrc.disconnect(); micStream.getTracks().forEach(t => t.stop()); micSrc = null; $('#tMic').classList.remove('on'); toast('🎙 Mikrofon o‘chdi'); return; }
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false } });
+    micSrc = actx.createMediaStreamSource(micStream); micSrc.connect(analyser);
+    $('#tMic').classList.add('on'); toast('🎙 Musiqa qo‘ying yoki gapiring — zarrachalar raqsga tushadi');
+  } catch (e) { toast('Mikrofonga ruxsat berilmadi'); }
+}
+function loadMusic(file) {
+  ensureAudio();
+  if (!audioEl) { audioEl = new Audio(); audioEl.loop = true; musicSrc = actx.createMediaElementSource(audioEl); musicSrc.connect(analyser); musicSrc.connect(actx.destination); }
+  audioEl.src = URL.createObjectURL(file); audioEl.play(); toast('🎵 ' + file.name.slice(0, 30));
+}
+function updateAudio(dt) {
+  if (!analyser || (!micSrc && !(audioEl && !audioEl.paused))) { audioLevel *= 0.9; return; }
+  analyser.getByteFrequencyData(fft);
+  let b = 0; for (let k = 1; k < 9; k++) b += fft[k]; b /= 8 * 255;
+  let all = 0; for (let k = 0; k < 96; k++) all += fft[k]; all /= 96 * 255;
+  bassAvg = lerp(bassAvg, b, Math.min(1, dt * 1.5)); audioLevel = lerp(audioLevel, all, 0.35);
+  if (S.audioGain > 0 && b > bassAvg * 1.22 && b > 0.32 && time - lastBeat > 0.26) { lastBeat = time; pulse(b * S.audioGain); }
+}
+
+/* ---------------- Recording / snapshot ---------------- */
+let rec = null, chunks = [], snap = false;
+// composite = mirrored camera + glowing particles (screen blend) — what you see is what gets saved
+const rc = document.createElement('canvas'), rcx = rc.getContext('2d');
+function composite() {
+  const w = canvas.width, h = canvas.height;
+  if (rc.width !== w || rc.height !== h) { rc.width = w; rc.height = h; }
+  rcx.globalCompositeOperation = 'source-over'; rcx.fillStyle = '#000'; rcx.fillRect(0, 0, w, h);
+  if (S.ar && video.videoWidth) {
+    const vw = video.videoWidth, vh = video.videoHeight, s = Math.max(w / vw, h / vh), dw = vw * s, dh = vh * s;
+    rcx.save(); rcx.filter = `brightness(${S.vb}) saturate(1.15) contrast(1.05)`; rcx.translate(w, 0); rcx.scale(-1, 1);
+    rcx.drawImage(video, (w - dw) / 2, (h - dh) / 2, dw, dh); rcx.restore();
+    rcx.globalCompositeOperation = 'screen';
+  }
+  rcx.drawImage(canvas, 0, 0, w, h); rcx.globalCompositeOperation = 'source-over';
+}
+function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }
+function toggleRec() {
+  if (rec) { rec.stop(); return; }
+  if (!window.MediaRecorder) { toast('Bu brauzer video yozishni qo‘llamaydi'); return; }
+  composite(); const stream = rc.captureStream(60);
+  if (actx && (micSrc || musicSrc)) { const dest = actx.createMediaStreamDestination(); micSrc && micSrc.connect(dest); musicSrc && musicSrc.connect(dest); dest.stream.getAudioTracks().forEach(t => stream.addTrack(t)); }
+  const mime = ['video/mp4;codecs=avc1', 'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].find(m => MediaRecorder.isTypeSupported(m)) || '';
+  rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 14e6 }); chunks = [];
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = () => {
+    download(new Blob(chunks, { type: mime || 'video/webm' }), `qol-sehri-${Date.now()}.${mime.includes('mp4') ? 'mp4' : 'webm'}`);
+    rec = null; $('#tRec').classList.remove('on'); $('#tRec').textContent = '⏺ Video yozish'; $('#recDot').style.display = 'none'; toast('🎬 Video saqlandi');
+  };
+  rec.start(250); $('#tRec').classList.add('on'); $('#tRec').textContent = '⏹ To‘xtatish'; $('#recDot').style.display = 'block';
+}
+
+/* ---------------- Main loop ---------------- */
+let last = performance.now(), fpsN = 0, fpsT = 0;
+let loopErr = false;
+function loop(now) {
+  requestAnimationFrame(loop);
+  try { frame(now); } catch (e) { if (!loopErr) { loopErr = true; console.error(e); toast('⚠️ ' + e.message); } }
+}
+function frame(now) {
+  const raw = Math.max(0, (now - last) / 1000), dt = Math.min(raw, 1 / 30); last = now; time += dt;
+  adaptQuality(raw, now); envCheck(now); processDwell(now); updateTrash();
+  const e = 1 - Math.exp(-dt * 6);
+  S.scale = lerp(S.scale, S.scaleT, e); S.rx = lerp(S.rx, S.rxT, e); S.ry = lerp(S.ry, S.ryT, e); S.rz = lerp(S.rz, S.rzT, e);
+  S.anchor.lerp(S.anchorT, 1 - Math.exp(-dt * 10));
+  group.position.copy(S.anchor);
+  group.rotation.set(S.rx, S.ry, S.rz); group.scale.setScalar(S.scale); group.updateMatrixWorld(); inv.copy(group.matrixWorld).invert();
+  detect(now);
+  updateAudio(dt);
+  objectsInteract(dt, now);
+  interact(dt, now);
+  updateObjects(dt);
+  handSparks(dt); updateSparks(dt); updateLightning();
+  S.gather = lerp(S.gather, S.gatherT, 1 - Math.exp(-dt * 8));
+  S.springMul += (1 - S.springMul) * Math.min(1, dt * 0.9);
+  physics(dt);
+  geo.attributes.position.needsUpdate = true;
+  if (colorLerp > 0) { const a = 1 - Math.exp(-dt * 4); for (let j = 0; j < N * 3; j++) col[j] += (colT[j] - col[j]) * a; colorLerp -= dt; geo.attributes.aColor.needsUpdate = true; }
+  pMat.uniforms.uSize.value = 0.085 * S.size; pMat.uniforms.uAudio.value = audioLevel * S.audioGain; pMat.uniforms.uCharge.value = S.charge;
+  S.kick *= Math.exp(-dt * 2.5); S.shake *= Math.exp(-dt * 4);
+  bloom.strength = S.bloom * (1 + S.charge * 0.8 + S.kick * 0.5 + audioLevel * S.audioGain * 0.6);
+  camera.position.x = Math.sin(time * 53) * S.shake; camera.position.y = Math.cos(time * 47) * S.shake;
+  stars.rotation.y += dt * 0.01;
+  const ch = $('#charge'); ch.style.opacity = S.charge > 0.02 ? 1 : 0; ch.firstChild.style.width = (S.charge * 100) + '%';
+  composer.render();
+  if (rec || snap) composite();
+  if (snap) { snap = false; rc.toBlob(b => { download(b, `qol-sehri-${Date.now()}.png`); toast('📸 Rasm saqlandi'); }); }
+  fpsN++; fpsT += raw; if (fpsT > 0.5) { $('#fps').textContent = `${Math.round(fpsN / fpsT)} fps · ${(N / 1000) | 0}k zarracha`; fpsN = 0; fpsT = 0; }
+}
+
+/* ---------------- UI ---------------- */
+let toastTO;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTO); toastTO = setTimeout(() => t.classList.remove('show'), 2200); }
+function markShapes() { document.querySelectorAll('.sbtn').forEach(b => b.classList.toggle('on', b.dataset.s === S.cur)); }
+function markThemes() { document.querySelectorAll('.sw').forEach((b, i) => b.classList.toggle('on', i === S.theme)); }
+const shapesEl = $('#shapes');
+const pickShape = k => { if (k !== 'face' && (S.mode === 'build' || S.mode === 'face')) setMode('magic', true); setShape(k); };
+SHAPE_LIST.forEach(([k, e, n]) => { const b = document.createElement('button'); b.className = 'sbtn'; b.dataset.s = k; b.innerHTML = `<span>${e}</span>${n}`; b.onclick = () => pickShape(k); shapesEl.appendChild(b); });
+THEMES.forEach((t, i) => { const d = document.createElement('div'); d.className = 'sw'; d.title = t.n; d.style.background = t.rainbow ? 'conic-gradient(red,orange,yellow,lime,cyan,blue,magenta,red)' : `linear-gradient(135deg,${t.c.join(',')})`; d.onclick = () => { S.theme = i; themeColors(); markThemes(); }; $('#themes').appendChild(d); });
+[['🐉', 'ajdar'], ['🚀', 'raketa'], ['🦁', 'sher'], ['🔥', 'olov'], ['🦄', 'unicorn'], ['🌍', 'yer'], ['✍', 'SALOM']].forEach(([e, w]) => { const c = document.createElement('span'); c.className = 'chip'; c.textContent = `${e} ${w}`; c.onclick = () => { $('#cmd').value = w; handleCommand(w); }; $('#quick').appendChild(c); });
+$('#cmdGo').onclick = () => handleCommand($('#cmd').value);
+$('#cmd').addEventListener('keydown', e => { if (e.key === 'Enter') handleCommand(e.target.value); e.stopPropagation(); });
+$('#voiceBtn').onclick = startVoice;
+$('#imgIn').onchange = e => { const f = e.target.files[0]; if (f) makeImage(f); e.target.value = ''; };
+$('#musicIn').onchange = e => { const f = e.target.files[0]; if (f) loadMusic(f); e.target.value = ''; };
+/* ---------------- Modes ---------------- */
+const MODES = {
+  magic: { t: '✨ Sehr rejimi', legend: [['🖐', 'shakl kaftda'], ['🙌', 'energiya shari'], ['✊→🖐', 'portlash'], ['☝️', 'itarish'], ['✌️', 'keyingi shakl'], ['🤟', 'rang'], ['👆', 'L — masshtab'], ['🤘', 'kuch turi']] },
+  build: { t: '🔷 Qurish rejimi — faqat ushlash va chizish', legend: [['🤏', 'ushlash va ko‘chirish'], ['🤏 → qo‘yish', 'qotadi'], ['🤏💨', 'otsangiz suzadi'], ['🤏🤏', 'ikki qo‘l — shakl chizish'], ['🤏+🤏', 'ushlab turib — kattalashtirish'], ['🖱', 'sudrash — chizish']] },
+  draw: { t: '✍️ Chizish rejimi — ☝️ bilan chizing, ✌️ bilan jonlantiring', legend: [['☝️', 'havoda chizish'], ['✌️', 'chizmani jonlantirish'], ['🧹', 'paneldan o‘chirish']] },
+  face: { t: '🎭 Yuz rejimi — kameraga qarang', legend: [['🙂', 'boshingizni burang'], ['😮', 'og‘zingizni oching'], ['🎨', 'rangni paneldan tanlang']] }
+};
+function setMode(m, silent) {
+  if (!MODES[m]) return;
+  if (m === 'face' && !camOn) { toast('🎭 Yuz rejimi uchun kamera kerak'); return; }
+  const prev = S.mode;
+  S.mode = m; S.draw = m === 'draw';
+  if (prev === 'face' && m !== 'face') stopFace(!silent);
+  if (m === 'face' && prev !== 'face') startFace();
+  points.visible = m !== 'build';
+  $('#oMain').classList.toggle('on', points.visible);
+  $('#tDraw').classList.toggle('on', S.draw);
+  document.querySelectorAll('.mbtn').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  $('#legend').innerHTML = MODES[m].legend.map(([e, t]) => `<div class="lg"><b>${e}</b>${t}</div>`).join('');
+  hudG = ''; if (!silent) toast(MODES[m].t);
+  if (!silent && camOn) showTut(m); else if ($('#tut').classList.contains('show') && tutS.mode !== m) $('#tut').classList.remove('show');
+}
+document.querySelectorAll('.mbtn').forEach(b => b.onclick = () => setMode(b.dataset.m));
+const toggleDraw = () => setMode(S.mode === 'draw' ? 'magic' : 'draw');
+$('#tDraw').onclick = toggleDraw;
+$('#tForm').onclick = formDrawing;
+$('#tClear').onclick = () => { clearTrail(); toast('🧹 Tozalandi'); };
+$('#tForce').onclick = toggleForce;
+$('#tAuto').onclick = () => { S.auto = !S.auto; $('#tAuto').classList.toggle('on', S.auto); };
+$('#tSkel').onclick = () => { S.skel = !S.skel; $('#tSkel').classList.toggle('on', S.skel); };
+$('#tBoom').onclick = () => explode(1.5);
+$('#tAR').onclick = () => { if (!camOn) { toast('📷 Avval kamerani yoqing'); return; } setAR(!S.ar); S.user = 1; toast(S.ar ? '📷 Effektlar kamerada' : '🌌 Kosmik fon'); };
+$('#tSpark').onclick = () => { S.sparks = !S.sparks; $('#tSpark').classList.toggle('on', S.sparks); };
+$('#tBolt').onclick = () => { S.bolts = !S.bolts; $('#tBolt').classList.toggle('on', S.bolts); };
+$('#rVb').oninput = e => { S.vb = +e.target.value; $('#vVb').textContent = S.vb.toFixed(2); video.style.setProperty('--vb', S.vb); };
+$('#tMic').onclick = toggleMic;
+$('#tRec').onclick = toggleRec;
+$('#tSnap').onclick = () => { snap = true; };
+const bindRange = (id, out, key) => { const r = $(id); r.oninput = () => { S[key] = +r.value; $(out).textContent = (+r.value).toFixed(1); }; };
+bindRange('#rSize', '#vSize', 'size'); bindRange('#rBloom', '#vBloom', 'bloom'); bindRange('#rTurb', '#vTurb', 'turb'); bindRange('#rAud', '#vAud', 'audioGain');
+$('#qual').onchange = e => {
+  const v = e.target.value; S.autoQ = v === 'auto';
+  if (S.autoQ) { toast('⚙️ Avto: tezlikka qarab moslashadi'); return; }
+  rebuildN(+v); toast(`⚙️ ${(N / 1000) | 0} 000 zarracha`);
+};
+$('#camSel').onchange = async e => { try { await openCamera(e.target.value); toast('📷 Kamera almashtirildi'); } catch (err) { toast('Bu kamerani ochib bo‘lmadi'); } };
+$('#oUndo').onclick = undo;
+$('#tutBtn').onclick = () => showTut(S.mode, true);
+$('#tutX').onclick = hideTut;
+const panel = $('#panel');
+const togglePanel = () => panel.classList.toggle('hide');
+$('#panelBtn').onclick = togglePanel;
+panel.classList.add('hide');
+
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); undo(); return; }
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if (k >= '0' && k <= '9') { const i = k === '0' ? 9 : +k - 1; if (SHAPE_LIST[i]) pickShape(SHAPE_LIST[i][0]); }
+  else if (k === ' ') { e.preventDefault(); explode(1.5); }
+  else if (k === 'c') nextTheme(); else if (k === 'd') toggleDraw(); else if (k === 'f') setShape('face');
+  else if (k === 'b') setMode('build'); else if (k === 'm') setMode('magic');
+  else if (k === 'r') toggleRec(); else if (k === 'h') togglePanel(); else if (k === 'p') snap = true;
+  else if (k === 'arrowright') nextShape(1); else if (k === 'arrowleft') nextShape(-1);
+});
+canvas.addEventListener('pointermove', e => { mouse.x = (e.clientX / innerWidth * 2 - 1) * halfW; mouse.y = -(e.clientY / innerHeight * 2 - 1) * halfH; mouse.t = performance.now(); mouse.over = true; });
+canvas.addEventListener('pointerleave', () => { mouse.over = false; mouse.down = false; });
+canvas.addEventListener('pointerdown', e => {
+  mouse.t = performance.now(); mouse.over = true; mouse.x = (e.clientX / innerWidth * 2 - 1) * halfW; mouse.y = -(e.clientY / innerHeight * 2 - 1) * halfH;
+  const p = new THREE.Vector3(mouse.x, mouse.y, 0);
+  if (S.mode === 'build') {
+    const o = hitObject(p); if (o) { grab(mouse, o, p); return; }
+    mouse.draw = p; return;
+  }
+  if (S.mode === 'face') return;
+  mouse.down = true; mouse.downT = mouse.t;
+});
+addEventListener('pointerup', () => {
+  if (mouse.hold) { release(mouse, performance.now()); return; }
+  if (mouse.draw) { finishDraw(mouse.draw.sh); mouse.draw = null; return; }
+  if (!mouse.down) return;
+  if (S.mode !== 'magic') { mouse.down = false; return; } mouse.down = false; const held = (performance.now() - mouse.downT) / 1000; if (held > 0.25) explode(clamp(0.6 + held * 0.6, 0.6, 2.2)); });
+canvas.addEventListener('wheel', e => { e.preventDefault(); S.scaleT = clamp(S.scaleT * (1 - e.deltaY * 0.001), 0.25, 3.5); }, { passive: false });
+
+OBJ_KINDS.forEach(([k, e, n]) => { const b = document.createElement('button'); b.className = 'sbtn okind' + (k === S.drawKind ? ' on' : ''); b.dataset.k = k; b.innerHTML = `<span>${e}</span>${n}`;
+  b.onclick = () => { S.drawKind = k; if (S.mode !== 'build') setMode('build', true); document.querySelectorAll('.okind').forEach(x => x.classList.toggle('on', x.dataset.k === k)); toast(`${e} ${n} — ikki qo‘l bilan chimdib chizing`); }; $('#okinds').appendChild(b); });
+const spawn = kind => { const o = addObject(kind, new THREE.Vector3(gs() * 2, gs() * 1.5, 0), 0.7, 0, 'float'); o.vel.set(gs() * 2, gs() * 2, 0); emit(o.pos, 0, 0, 0, 150, 2.5, 0.8); HIST.push({ t: 'add', o }); };
+$('#oCube').onclick = () => spawn('cube'); $('#oOrb').onclick = () => spawn('orb');
+$('#oFloat').onclick = () => { OBJ.forEach(o => { if (o.holder) return; o.corner = false; o.state = 'float'; o.vel.set(gs() * 3, gs() * 3, 0); }); toast('🌊 Hammasi suzib ketdi'); };
+$('#oPin').onclick = () => { OBJ.forEach(o => { if (o.holder) return; o.corner = false; o.state = 'pinned'; o.flash = 1; }); toast('📌 Hammasi qotirildi'); };
+$('#oClear').onclick = () => { removeAll(); toast('🧹 Ob‘ektlar o‘chirildi'); };
+$('#oMain').onclick = () => { points.visible = !points.visible; $('#oMain').classList.toggle('on', points.visible); };
+
+/* ---------------- Storage ---------------- */
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem('qs_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('qs_' + k, JSON.stringify(v)); } catch (e) { } }
+};
+
+/* ---------------- Guided practice (onboarding) ---------------- */
+const TUT = {
+  magic: [['hand', '✋ Qo‘lingizni kameraga ko‘rsating'], ['palm', '🖐 Kaftni oching — shakl kaftingizga keladi'], ['boom', '✊ Musht qilib 1 soniya ushlang, so‘ng 🖐 oching — portlash'], ['next', '✌️ Ikki barmoqni halqa to‘lguncha ushlang — keyingi shakl']],
+  build: [['hand', '✋ Qo‘lingizni kameraga ko‘rsating'], ['pinch', '🤏 Bosh va ko‘rsatkich barmoqni jipslang — doiracha yashil bo‘ladi'], ['grab', '🤏 Kubni ushlab, boshqa joyga olib borib qo‘ying'], ['draw2', '🤏🤏 Ikki qo‘lni chimdib cho‘zing — shakl chiziladi']],
+  draw: [['hand', '✋ Qo‘lingizni kameraga ko‘rsating'], ['trail', '☝️ Ko‘rsatkich barmoq bilan havoda chizing'], ['form', '✌️ Ikki barmoqni ushlang — chizma jonlanadi']],
+  face: [['face', '🙂 Kameraga qarang — yuzingizga niqob tushadi']]
+};
+let tutS = { mode: null, done: new Set() }, tutHideTO;
+function showTut(mode, force) {
+  if (!TUT[mode] || (!force && LS.get('tut_' + mode, false))) return;
+  if (!camOn && force) toast('ℹ️ Mashq kamera bilan ishlaydi');
+  tutS = { mode, done: new Set() }; clearTimeout(tutHideTO); renderTut(); $('#tut').classList.add('show');
+}
+function hideTut() { $('#tut').classList.remove('show'); if (tutS.mode) LS.set('tut_' + tutS.mode, true); }
+function tut(key) {
+  if (!tutS.mode || tutS.done.has(key) || !$('#tut').classList.contains('show')) return;
+  if (!TUT[tutS.mode].some(s => s[0] === key)) return;
+  tutS.done.add(key); renderTut();
+}
+function renderTut() {
+  const st = TUT[tutS.mode], cur = st.findIndex(s => !tutS.done.has(s[0]));
+  $('#tutT').textContent = '🎓 Mashq — ' + MODES[tutS.mode].t.split(' — ')[0];
+  $('#tutS').innerHTML = st.map((s, i) => { const d = tutS.done.has(s[0]); return `<div class="step ${d ? 'done' : i === cur ? 'cur' : ''}"><div class="ck">${d ? '✓' : i + 1}</div>${s[1]}</div>`; }).join('');
+  const fin = cur === -1; $('#tut .fin').style.display = fin ? 'block' : 'none';
+  if (fin) { LS.set('tut_' + tutS.mode, true); tutHideTO = setTimeout(hideTut, 2600); }
+}
+
+/* ---------------- Trash, undo, scene persistence ---------------- */
+const trashEl = $('#trash'); let trashHot = false;
+function updateTrash() {
+  const held = OBJ.find(o => o.holder), show = S.mode === 'build' && !!held;
+  trashEl.classList.toggle('show', show); trashHot = false;
+  if (show) {
+    const sx = (held.pos.x / halfW + 1) / 2 * innerWidth, sy = (1 - held.pos.y / halfH) / 2 * innerHeight, r = trashEl.getBoundingClientRect();
+    trashHot = Math.hypot(sx - (r.left + r.width / 2), sy - (r.top + r.height / 2)) < 95;
+  }
+  trashEl.classList.toggle('hot', trashHot);
+}
+const HIST = [];
+const ser = o => ({ kind: o.kind, x: +o.pos.x.toFixed(3), y: +o.pos.y.toFixed(3), size: +o.size.toFixed(3), rot: +o.rot.toFixed(3), state: o.state === 'held' ? 'pinned' : o.state, vx: +o.vel.x.toFixed(3), vy: +o.vel.y.toFixed(3), corner: !!o.corner });
+function deser(d) {
+  if (!d || !['cube', 'orb', 'circle', 'square', 'triangle', 'star', 'heart'].includes(d.kind)) return null;
+  const o = addObject(d.kind, new THREE.Vector3(+d.x || 0, +d.y || 0, 0), clamp(+d.size || 0.7, 0.15, 7), +d.rot || 0, d.state === 'float' ? 'float' : 'pinned');
+  o.vel.set(+d.vx || 0, +d.vy || 0, 0); o.corner = !!d.corner; return o;
+}
+function deleteObject(o, record) {
+  const i = OBJ.indexOf(o); if (i < 0) return;
+  if (o.holder) { o.holder.hold = null; o.holder = null; }
+  if (record) HIST.push({ t: 'del', d: ser(o) });
+  emit(o.pos, 0, 0, 0, 220, 3, 0.9); scene.remove(o.pts); o.pts.geometry.dispose(); OBJ.splice(i, 1);
+}
+function undo() {
+  const h = HIST.pop(); if (!h) { toast('Bekor qiladigan amal yo‘q'); return; }
+  if (h.t === 'add') deleteObject(h.o, false); else if (h.t === 'del') deser(h.d); else if (h.t === 'clear') h.d.forEach(deser);
+  toast('↩️ Bekor qilindi');
+}
+function saveAll() {
+  LS.set('scene', OBJ.map(ser));
+  LS.set('settings', { theme: S.theme, size: S.size, bloom: S.bloom, turb: S.turb, vb: S.vb, audioGain: S.audioGain, drawKind: S.drawKind, qual: $('#qual').value, auto: S.auto, skel: S.skel, sparks: S.sparks, bolts: S.bolts });
+}
+setInterval(saveAll, 1500); addEventListener('pagehide', saveAll);
+function applySettings() {
+  const s = LS.get('settings', null); if (!s) return null;
+  if (THEMES[s.theme]) S.theme = s.theme;
+  for (const [id, key] of [['#rSize', 'size'], ['#rBloom', 'bloom'], ['#rTurb', 'turb'], ['#rAud', 'audioGain'], ['#rVb', 'vb']])
+    if (typeof s[key] === 'number') { const r = $(id); r.value = s[key]; r.dispatchEvent(new Event('input')); }
+  if (OBJ_KINDS.some(k => k[0] === s.drawKind)) { S.drawKind = s.drawKind; document.querySelectorAll('.okind').forEach(x => x.classList.toggle('on', x.dataset.k === S.drawKind)); }
+  for (const [key, id] of [['auto', '#tAuto'], ['skel', '#tSkel'], ['sparks', '#tSpark'], ['bolts', '#tBolt']])
+    if (typeof s[key] === 'boolean') { S[key] = s[key]; $(id).classList.toggle('on', s[key]); }
+  return s.qual;
+}
+
+/* ---------------- Adaptive quality ---------------- */
+S.autoQ = true;
+const Q_STEPS = [200000, 120000, 70000, 30000, 15000];
+const perfWin = { n: 0, t: 0, bad: 0, last: 0 };
+function rebuildN(n) {
+  build(n);
+  if (S.face) { assignFace(); faceFirst = true; } else if (S.regen) { const r = S.regen(N); if (r) setTargets(r.o, r.c); }
+  points.visible = S.mode !== 'build';
+}
+function adaptQuality(raw, now) {
+  if (!S.autoQ || document.hidden || raw > 0.5) return;
+  perfWin.n++; perfWin.t += raw; if (perfWin.t < 2) return;
+  const fps = perfWin.n / perfWin.t; perfWin.n = 0; perfWin.t = 0;
+  perfWin.bad = fps < 40 ? perfWin.bad + 1 : 0;
+  if (perfWin.bad >= 2 && now - perfWin.last > 8000) {
+    const next = Q_STEPS.find(q => q < N);
+    if (next) { perfWin.bad = 0; perfWin.last = now; rebuildN(next); toast(`⚙️ Silliq ishlashi uchun ${(next / 1000) | 0}k zarrachaga o‘tildi`); }
+  }
+}
+
+/* ---------------- Environment hints ---------------- */
+const lightCv = document.createElement('canvas'); lightCv.width = 32; lightCv.height = 18;
+const lightCx = lightCv.getContext('2d', { willReadFrequently: true });
+const hintT = {}; let hintTO, nextEnv = 0, camStartT = 0;
+function hint(key, msg, every = 25000) {
+  const now = performance.now(); if (hintT[key] && now - hintT[key] < every) return; hintT[key] = now;
+  const h = $('#hint'); h.textContent = msg; h.classList.add('show'); clearTimeout(hintTO); hintTO = setTimeout(() => h.classList.remove('show'), 3400);
+}
+function envCheck(now) {
+  if (!camOn || now < nextEnv || video.readyState < 2) return; nextEnv = now + 1000;
+  try {
+    lightCx.drawImage(video, 0, 0, 32, 18); const d = lightCx.getImageData(0, 0, 32, 18).data; let s = 0;
+    for (let i = 0; i < d.length; i += 4) s += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+    if (s / (d.length / 4) / 255 < 0.17) hint('dark', '💡 Xona qorong‘i — yorug‘roq joyga o‘ting, qo‘llar yaxshiroq taniladi');
+  } catch (e) { }
+  if (slots.some(s => s.present && s.hs > 0.62)) hint('close', '✋ Qo‘lingiz juda yaqin — biroz uzoqlashtiring', 15000);
+  if (S.mode !== 'face' && now - lastSeen > 7000 && now - camStartT > 7000) hint('nohand', '👋 Qo‘lingizni kamera oldida ko‘rsating', 30000);
+}
+
+/* ---------------- Boot ---------------- */
+const savedQ = applySettings();
+const qNum = savedQ && savedQ !== 'auto' && Q_STEPS.includes(+savedQ) ? +savedQ : 0;
+S.autoQ = !qNum;
+build(qNum || (isMobile ? 30000 : 70000));
+const savedScene = LS.get('scene', null);
+if (Array.isArray(savedScene)) savedScene.forEach(deser);
+else { const c = addObject('cube', new THREE.Vector3(), 0.65, 0, 'pinned'); c.corner = true; }
+setMode('magic', true);
+$('#qual').value = S.autoQ ? 'auto' : String(N);
+setShape('galaxy', true); markThemes();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
+document.fonts && document.fonts.load('700 150px Unbounded').catch(() => {});
+requestAnimationFrame(loop);
+function begin() { $('#start').classList.add('out'); setTimeout(() => $('#start').style.display = 'none', 700); }
+$('#goCam').onclick = async () => {
+  $('#goCam').disabled = $('#goMouse').disabled = true;
+  const ok = await startCamera();
+  begin();
+  if (ok) { camStartT = performance.now(); setHud('none'); showTut('magic'); if (!$('#tut').classList.contains('show')) toast('✋ Qo‘lingizni ko‘rsating!'); } else setHud('mouse');
+};
+$('#goMouse').onclick = () => { begin(); setHud('mouse'); toast('🖱 Sichqonchani yurgizing, bosib turib qo‘yib yuboring!'); };
+window.__qs = { S, slots, explode, setShape, handleCommand, OBJ };
+</script>
+</body>
+</html>
